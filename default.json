@@ -12,6 +12,26 @@
   "labels": ["dependencies"],
   "packageRules": [
     {
+      "description": "Hygiene: digest pins + lockfile maintenance — content-locking, automerge always",
+      "matchUpdateTypes": ["pinDigest", "lockFileMaintenance"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Patch bumps — automerge if CI is green (cross-ecosystem)",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "npm devDependencies — minor bumps automerge (build-time only, no runtime risk)",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
       "description": "ANcpLua first-party (cross-repo) — automerge minor/patch",
       "matchPackageNames": ["/^ANcpLua\\./"],
       "groupName": "ancplua-sdk",
