@@ -110,7 +110,6 @@
       "description": ".NET SDK — stable channel only, block previews",
       "matchManagers": ["dotnet-sdk"],
       "matchPackageNames": ["dotnet-sdk"],
-      "ignoreUnstable": true,
       "allowedVersions": "/^[0-9]+\\.[0-9]+\\.[0-9]+$/"
     }
   ],
