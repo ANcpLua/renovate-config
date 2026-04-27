@@ -1,45 +1,18 @@
-# ANcpLua/renovate-config — deployment notes
+# ANcpLua/renovate-config
 
-Draft of a shared Renovate preset for the ANcpLua framework. Replaces the four
-hand-rolled `renovate.json` files in `ANcpLua.NET.Sdk`, `ANcpLua.Roslyn.Utilities`,
-`ANcpLua.Analyzers`, and `ANcpLua.Agents`.
+Shared Renovate preset for the ANcpLua framework: `ANcpLua.NET.Sdk`,
+`ANcpLua.Roslyn.Utilities`, `ANcpLua.Analyzers`, `ANcpLua.Agents`.
 
 ## Why
 
-- Today: 4× copy-paste configs, drift between them is real (already observed: different
-  groupName conventions, missing customManagers, `fileMatch` is the deprecated field name
-  per Renovate docs — current is `managerFilePatterns`).
-- Goal: one source of truth, repo-local file becomes ~10 lines.
+Replaces 4× hand-rolled `renovate.json` files (which had drifted: different
+groupName conventions, missing customManagers, deprecated `fileMatch` field).
+Adds `customManagers` so Renovate can bump the `Version.props` indirection —
+the workaround for [Renovate issue #2266][r2266], open since 2018.
 
-## What this preset does that the current configs don't
+[r2266]: https://github.com/renovatebot/renovate/issues/2266
 
-1. **`config:best-practices`** baseline (digest pinning, ConfigMigration, abandoned-pkg
-   handling, pinned dev deps, security alerts) — currently each repo only uses
-   `config:recommended`.
-2. **`customManagers` (~50 entries)** for `Version.props` properties so Renovate can
-   bump the indirected versions. This is the workaround for Renovate issue #2266
-   (open since 2018, priority-4-low — not coming natively).
-3. **Unified package groupings** — Roslyn / MS.Extensions / MAF / Meziantou / Testing /
-   OpenAPI / OTel are grouped once, used by all four repos.
-4. **MAF pre-release manual review** — preview/rc/alpha/beta tracks require manual
-   approval (matches current `Agents` repo behavior, missing in others).
-
-## Deployment
-
-### Step 1 — create the shared preset repo
-
-```bash
-gh repo create ANcpLua/renovate-config --public --description "Shared Renovate config for the ANcpLua framework"
-git -C /tmp clone https://github.com/ANcpLua/renovate-config
-cp /Users/ancplua/framework/renovate-config-draft/default.json /tmp/renovate-config/
-git -C /tmp/renovate-config add default.json
-git -C /tmp/renovate-config commit -m "feat: initial shared preset"
-git -C /tmp/renovate-config push
-```
-
-### Step 2 — replace each repo's renovate.json
-
-Each of the four framework repos shrinks to:
+## Usage
 
 ```jsonc
 {
@@ -47,7 +20,7 @@ Each of the four framework repos shrinks to:
   "extends": ["github>ANcpLua/renovate-config"],
   "packageRules": [
     {
-      "description": "Block self-bumps (repo-specific)",
+      "description": "Block self-bumps",
       "matchPackageNames": ["/^ANcpLua\\.<RepoName>/"],
       "enabled": false
     }
@@ -55,44 +28,43 @@ Each of the four framework repos shrinks to:
 }
 ```
 
-Per-repo `<RepoName>` substitutions:
+Per-repo self-bump pattern:
 
-| Repo | Self-bump block pattern |
+| Repo | Pattern |
 |---|---|
 | `ANcpLua.NET.Sdk` | `/^ANcpLua\\.NET\\.Sdk/` |
-| `ANcpLua.Roslyn.Utilities` | `/^ANcpLua\\./` (Utilities is the foundation — block all first-party self-bumps) |
+| `ANcpLua.Roslyn.Utilities` | `/^ANcpLua\\./` (foundation — block all first-party) |
 | `ANcpLua.Analyzers` | `/^ANcpLua\\.Analyzers/`, `/^Dummy/` |
 | `ANcpLua.Agents` | `/^ANcpLua\\.Agents/` |
 
-### Step 3 — verify
+## Caveats
 
-After the first Renovate cycle, the dependency dashboard should show the new
-customManager-detected dependencies (Roslyn, BCL, MS.Extensions, MAF, etc.) as
-distinct entries that can be bumped independently. Currently they're invisible
-to Renovate because of the `Version="$(SomeProperty)"` indirection.
+- **Heterogeneous families**: `OpenTelemetryVersion` uses `OpenTelemetry.Api` as
+  canary, but instrumentation packages (`OpenTelemetry.Instrumentation.*`) can
+  lag the umbrella by a release. Same for `MicrosoftExtensionsVersion` (canary:
+  `Microsoft.Extensions.Diagnostics.Testing`) — the broader Extensions family
+  ships in lock-step but consumer-facing surface varies.
+- **`AspNetCoreVersion`** uses `Microsoft.AspNetCore.Mvc.Testing` as canary
+  (matches what consumers actually reference). The runtime patch cadence flows
+  through this package; if a deeper ASP.NET package needs an independent track,
+  add a property + customManager.
+- **`ANcpSdkPackageVersion=999.9.9`** is intentionally NOT in customManagers —
+  it's a build-time placeholder, not a real dependency.
+- **MAF pre-release** (`-preview`/`-rc`/`-alpha`/`-beta`) requires manual review
+  — automerge is disabled for those.
 
-## Notes / caveats
+## Future consideration
 
-- **`AspNetCoreVersion`** maps to `Microsoft.AspNetCore.App.Runtime.linux-x64` — that
-  package tracks the ASP.NET Core runtime patch cadence. If you'd rather track
-  `Microsoft.AspNetCore.OpenApi` or another umbrella, swap the `depNameTemplate`.
-- **`MicrosoftExtensionsVersion`** maps to `Microsoft.Extensions.Hosting`. The Extensions
-  family ships in lock-step, so any package in the family will work as the canary.
-- **`OpenTelemetryVersion`** maps to bare `OpenTelemetry`. The OTel family also ships
-  in lock-step but instrumentation packages can lag — verify with each release.
-- **Some Property names are guesses** — verify by checking nuget.org or running
-  `nuget search <PackageName>` before merging the first PR.
-- **`ANcpSdkPackageVersion=999.9.9`** is intentionally NOT in customManagers (it's a
-  build-time placeholder, not a real dependency).
-- **Aliases** (`XunitMtpVersion`, `MvcTestingVersion`) reference other properties via
-  `$(...)` — not in customManagers; bumping the source property cascades.
-- **`fileMatch` → `managerFilePatterns`**: the current configs don't use either field
-  yet (no customManagers), so the deprecation isn't biting today. The new preset uses
-  the current field name `managerFilePatterns` per the Renovate docs.
+The `Version.props` indirection sits above CPM (`Directory.Packages.props`),
+which Renovate already bumps natively. ~80% of the customManagers in this
+preset would be redundant if the indirection were removed and CPM's
+`<PackageVersion Version="x.y.z"/>` literals became the source of truth.
+Keeping the indirection has its own benefits (cross-cutting bumps in one place,
+version-by-symbolic-name across the ecosystem). The trade-off is worth
+revisiting once the customManager guess-and-verify cycle settles.
 
 ## Rollback
 
-If the customManagers cause a noisy week (too many PRs at once), drop the
-`customManagers` array — the preset still works as a regular grouped/automerged
-baseline. Or extend `customManagers` selectively instead of the all-at-once
-shape.
+If `customManagers` produce too many concurrent PRs after a quiet week, drop
+that array from this preset — the grouping/automerge baseline still works
+without it.
