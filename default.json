@@ -139,19 +139,19 @@
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — ASP.NET Core",
+      "description": "Version.props — ASP.NET Core (canary: Mvc.Testing, what consumers reference)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<AspNetCoreVersion>(?<currentValue>[^<]+)</AspNetCoreVersion>"],
-      "depNameTemplate": "Microsoft.AspNetCore.App.Runtime.linux-x64",
+      "depNameTemplate": "Microsoft.AspNetCore.Mvc.Testing",
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Extensions umbrella",
+      "description": "Version.props — Microsoft.Extensions umbrella (canary: Diagnostics.Testing, what consumers reference)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<MicrosoftExtensionsVersion>(?<currentValue>[^<]+)</MicrosoftExtensionsVersion>"],
-      "depNameTemplate": "Microsoft.Extensions.Hosting",
+      "depNameTemplate": "Microsoft.Extensions.Diagnostics.Testing",
       "datasourceTemplate": "nuget"
     },
     {
@@ -355,11 +355,11 @@
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — OpenTelemetry umbrella",
+      "description": "Version.props — OpenTelemetry umbrella (canary: OpenTelemetry.Api, what consumers reference; instrumentation packages can lag)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<OpenTelemetryVersion>(?<currentValue>[^<]+)</OpenTelemetryVersion>"],
-      "depNameTemplate": "OpenTelemetry",
+      "depNameTemplate": "OpenTelemetry.Api",
       "datasourceTemplate": "nuget"
     },
     {
