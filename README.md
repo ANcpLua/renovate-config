@@ -59,9 +59,28 @@ Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/micros
 | Lockfile maintenance + digest pins | Automerge always |
 | Major bumps (default) | Manual review |
 | `.NET SDK` (`global.json`) | Stable channel only (`x.y.z`) |
+| `platformAutomerge: true` | Uses GitHub's native auto-merge (waits for required branch-protection checks) |
+| `prHourlyLimit: 2` / `prConcurrentLimit: 5` | Caps Renovate PR rate per repo |
 
 Rule order matters: the global "majors → manual review" rule sits **before**
 the MAF stable + RC allowlists, so the allowlists override it.
+
+## Default-deny unstable
+
+Two early `packageRules` reject prereleases by default:
+
+- **npm**: `allowedVersions: !/(?:alpha|beta|rc|preview|pre|dev|canary|next|nightly)/i`
+- **NuGet**: `allowedVersions: !/(?:alpha|beta|preview|pre|dev|experimental|nightly)/i` (note: `rc` is **allowed** — the MAF RC track and other Microsoft RC packages still flow through)
+
+A follow-up exception rule resets `allowedVersions` for packages where the
+deny would freeze legitimate prerelease pins:
+
+- All first-party `^ANcpLua\.` packages (you control the cadence)
+- `Microsoft.OpenApi.Readers` — upstream has no stable 2.0
+- `JonSkeet.RoslynAnalyzers` — upstream beta-only
+
+The MAF stable / RC / quarantine rules later in the file set their own
+`allowedVersions` and override the global default-deny for matrix packages.
 
 ## Validation
 

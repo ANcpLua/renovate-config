@@ -10,6 +10,9 @@
   "dependencyDashboard": true,
   "commitMessagePrefix": "deps:",
   "labels": ["dependencies"],
+  "platformAutomerge": true,
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
   "packageRules": [
     {
       "description": "Hygiene: digest pins + lockfile maintenance — content-locking, automerge always",
@@ -30,6 +33,28 @@
       "matchUpdateTypes": ["minor"],
       "automerge": true,
       "automergeType": "pr"
+    },
+    {
+      "description": "Block unstable npm versions by default — alpha/beta/rc/preview/pre/dev/canary/next/nightly",
+      "matchManagers": ["npm"],
+      "allowedVersions": "!/(?:alpha|beta|rc|preview|pre|dev|canary|next|nightly)/i"
+    },
+    {
+      "description": "Block unstable NuGet versions by default — alpha/beta/preview/pre/dev/experimental/nightly. RC is allowed; the MAF matrix and per-package exceptions below override as needed",
+      "matchDatasources": ["nuget"],
+      "allowedVersions": "!/(?:alpha|beta|preview|pre|dev|experimental|nightly)/i"
+    },
+    {
+      "description": "Known-prerelease NuGet exceptions: first-party packages plus upstreams with no stable release. Resets allowedVersions so the default-deny does not freeze legitimate prerelease pins",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": [
+        "/^ANcpLua\\./",
+        "Microsoft.OpenApi.Readers",
+        "JonSkeet.RoslynAnalyzers"
+      ],
+      "ignoreUnstable": false,
+      "respectLatest": false,
+      "allowedVersions": "*"
     },
     {
       "description": "ANcpLua first-party (cross-repo) — automerge minor/patch",
