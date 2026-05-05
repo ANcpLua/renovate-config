@@ -61,9 +61,9 @@
       "automergeType": "pr"
     },
     {
-      "description": "MAF — Microsoft.Agents.AI + Microsoft.Extensions.AI + OpenAI clients",
+      "description": "AI client packages excluding Microsoft Agent Framework package-status matrix",
+      "matchDatasources": ["nuget"],
       "matchPackageNames": [
-        "/^Microsoft\\.Agents\\.AI/",
         "/^Microsoft\\.Extensions\\.AI/",
         "/^OpenAI/",
         "/^Azure\\.AI\\.OpenAI/",
@@ -71,15 +71,9 @@
         "/^OllamaSharp/",
         "/^Mscc\\.GenerativeAI/"
       ],
-      "groupName": "microsoft-agents-ai",
+      "groupName": "ai-client-packages",
       "automerge": true,
       "automergeType": "pr"
-    },
-    {
-      "description": "MAF Pre-Release tracks (preview/rc) — manual review",
-      "matchPackageNames": ["/^Microsoft\\.Agents\\.AI/"],
-      "matchCurrentVersion": "/-(preview|rc|alpha|beta)/",
-      "automerge": false
     },
     {
       "description": "Meziantou family",
@@ -121,10 +115,128 @@
       "automergeType": "pr"
     },
     {
-      "description": "Major bumps require manual review",
+      "description": "Major bumps require manual review by default",
       "matchUpdateTypes": ["major"],
       "automerge": false,
       "labels": ["dependencies", "major"]
+    },
+    {
+      "description": "MAF stable packages — stable versions only, automerge including majors",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": [
+        "Microsoft.Agents.AI",
+        "Microsoft.Agents.AI.Abstractions",
+        "Microsoft.Agents.AI.Foundry",
+        "Microsoft.Agents.AI.OpenAI",
+        "Microsoft.Agents.AI.Workflows",
+        "Microsoft.Agents.AI.Workflows.Generators"
+      ],
+      "groupName": "microsoft-agent-framework-stable",
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+$/",
+      "automerge": true,
+      "automergeType": "pr",
+      "dependencyDashboardApproval": false,
+      "labels": ["dependencies", "microsoft-agent-framework", "stable"],
+      "prPriority": 5,
+      "prBodyNotes": [
+        "ANcpLua Microsoft Agent Framework matrix 2026-05-05: this package is stable-track. Stable versions only; preview/alpha/beta/dev builds are intentionally excluded."
+      ]
+    },
+    {
+      "description": "MAF RC packages — stable or RC versions only, automerge including majors",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": [
+        "Microsoft.Agents.AI.Declarative",
+        "Microsoft.Agents.AI.Purview",
+        "Microsoft.Agents.AI.Workflows.Declarative",
+        "Microsoft.Agents.AI.Workflows.Declarative.Foundry"
+      ],
+      "groupName": "microsoft-agent-framework-rc",
+      "ignoreUnstable": false,
+      "respectLatest": false,
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-rc(?:\\.?\\d+(?:\\.\\d+)*)?)?$/i",
+      "automerge": true,
+      "automergeType": "pr",
+      "dependencyDashboardApproval": false,
+      "labels": ["dependencies", "microsoft-agent-framework", "rc"],
+      "prPriority": 4,
+      "prBodyNotes": [
+        "ANcpLua Microsoft Agent Framework matrix 2026-05-05: this package is RC-track. Stable and RC versions are allowed; preview/alpha/beta/dev builds are intentionally excluded."
+      ]
+    },
+    {
+      "description": "MAF preview/alpha packages — do not suggest preview/alpha; allow only future stable or RC with manual approval",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": [
+        "Aspire.Hosting.AgentFramework.DevUI",
+        "Microsoft.Agents.AI.A2A",
+        "Microsoft.Agents.AI.AGUI",
+        "Microsoft.Agents.AI.Anthropic",
+        "Microsoft.Agents.AI.AzureAI.Persistent",
+        "Microsoft.Agents.AI.CopilotStudio",
+        "Microsoft.Agents.AI.CosmosNoSql",
+        "Microsoft.Agents.AI.DevUI",
+        "Microsoft.Agents.AI.DurableTask",
+        "Microsoft.Agents.AI.Foundry.Hosting",
+        "Microsoft.Agents.AI.GitHub.Copilot",
+        "Microsoft.Agents.AI.Hosting",
+        "Microsoft.Agents.AI.Hosting.A2A",
+        "Microsoft.Agents.AI.Hosting.A2A.AspNetCore",
+        "Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
+        "Microsoft.Agents.AI.Hosting.AzureFunctions",
+        "Microsoft.Agents.AI.Hosting.OpenAI",
+        "Microsoft.Agents.AI.ProjectTemplates"
+      ],
+      "groupName": "microsoft-agent-framework-preview-alpha-quarantine",
+      "ignoreUnstable": false,
+      "respectLatest": false,
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-rc(?:\\.?\\d+(?:\\.\\d+)*)?)?$/i",
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "microsoft-agent-framework", "preview-or-alpha", "manual-review"],
+      "prPriority": -5,
+      "prBodyNotes": [
+        "ANcpLua Microsoft Agent Framework matrix 2026-05-05: this package is preview/alpha-track. Renovate may propose only future stable or RC releases; preview/alpha/beta/dev builds are intentionally excluded and never automerged."
+      ]
+    },
+    {
+      "description": "MAF legacy package — migrate AzureAI naming to Foundry",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": ["Microsoft.Agents.AI.AzureAI"],
+      "replacementName": "Microsoft.Agents.AI.Foundry",
+      "replacementVersion": "1.3.0",
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "microsoft-agent-framework", "legacy", "migration"],
+      "prBodyNotes": [
+        "Microsoft.Agents.AI.AzureAI is marked superseded in the ANcpLua Microsoft Agent Framework matrix 2026-05-05. Prefer Microsoft.Agents.AI.Foundry. Replacement rules do not apply to custom.regex-managed Version.props entries, so Version.props migrations may require manual edits."
+      ]
+    },
+    {
+      "description": "MAF legacy package — migrate Declarative AzureAI workflows to Declarative Foundry workflows",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": ["Microsoft.Agents.AI.Workflows.Declarative.AzureAI"],
+      "replacementName": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
+      "replacementVersion": "1.3.0-rc1",
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "microsoft-agent-framework", "legacy", "migration"],
+      "prBodyNotes": [
+        "Microsoft.Agents.AI.Workflows.Declarative.AzureAI is marked superseded in the ANcpLua Microsoft Agent Framework matrix 2026-05-05. Prefer Microsoft.Agents.AI.Workflows.Declarative.Foundry. Replacement rules do not apply to custom.regex-managed Version.props entries, so Version.props migrations may require manual edits."
+      ]
+    },
+    {
+      "description": "MAF legacy preview package — migrate FoundryMemory to Foundry",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": ["Microsoft.Agents.AI.FoundryMemory"],
+      "replacementName": "Microsoft.Agents.AI.Foundry",
+      "replacementVersion": "1.3.0",
+      "automerge": false,
+      "dependencyDashboardApproval": true,
+      "labels": ["dependencies", "microsoft-agent-framework", "legacy", "preview", "migration"],
+      "prBodyNotes": [
+        "Microsoft.Agents.AI.FoundryMemory is marked superseded in the ANcpLua Microsoft Agent Framework matrix 2026-05-05. Prefer Microsoft.Agents.AI.Foundry. Replacement rules do not apply to custom.regex-managed Version.props entries, so Version.props migrations may require manual edits."
+      ]
     },
     {
       "description": ".NET SDK — stable channel only, block previews",
@@ -439,7 +551,15 @@
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI",
+      "description": "Version.props — Aspire.Hosting.AgentFramework.DevUI (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<AspireHostingAgentFrameworkDevUIVersion>(?<currentValue>[^<]+)</AspireHostingAgentFrameworkDevUIVersion>"],
+      "depNameTemplate": "Aspire.Hosting.AgentFramework.DevUI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI (MAF stable)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<MicrosoftAgentsAIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIVersion>"],
@@ -447,31 +567,31 @@
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI.Workflows",
+      "description": "Version.props — Microsoft.Agents.AI.A2A (MAF preview)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
-      "matchStrings": ["<MicrosoftAgentsAIWorkflowsVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsVersion>"],
-      "depNameTemplate": "Microsoft.Agents.AI.Workflows",
+      "matchStrings": ["<MicrosoftAgentsAIA2AVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIA2AVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.A2A",
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI.Hosting",
+      "description": "Version.props — Microsoft.Agents.AI.Abstractions (MAF stable)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
-      "matchStrings": ["<MicrosoftAgentsAIHostingVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingVersion>"],
-      "depNameTemplate": "Microsoft.Agents.AI.Hosting",
+      "matchStrings": ["<MicrosoftAgentsAIAbstractionsVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIAbstractionsVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Abstractions",
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
+      "description": "Version.props — Microsoft.Agents.AI.AGUI (MAF preview)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
-      "matchStrings": ["<MicrosoftAgentsAIHostingAGUIAspNetCoreVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingAGUIAspNetCoreVersion>"],
-      "depNameTemplate": "Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
+      "matchStrings": ["<MicrosoftAgentsAIAGUIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIAGUIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.AGUI",
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI.Anthropic",
+      "description": "Version.props — Microsoft.Agents.AI.Anthropic (MAF preview)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<MicrosoftAgentsAIAnthropicVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIAnthropicVersion>"],
@@ -479,11 +599,203 @@
       "datasourceTemplate": "nuget"
     },
     {
-      "description": "Version.props — Microsoft.Agents.AI.Workflows.Declarative",
+      "description": "Version.props — Microsoft.Agents.AI.AzureAI (MAF legacy/superseded by Foundry)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIAzureAIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIAzureAIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.AzureAI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.AzureAI.Persistent (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIAzureAIPersistentVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIAzureAIPersistentVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.AzureAI.Persistent",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.CopilotStudio (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAICopilotStudioVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAICopilotStudioVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.CopilotStudio",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.CosmosNoSql (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAICosmosNoSqlVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAICosmosNoSqlVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.CosmosNoSql",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Declarative (MAF RC)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIDeclarativeVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIDeclarativeVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Declarative",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.DevUI (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIDevUIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIDevUIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.DevUI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.DurableTask (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIDurableTaskVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIDurableTaskVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.DurableTask",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Foundry (MAF stable)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIFoundryVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIFoundryVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Foundry",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Foundry.Hosting (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIFoundryHostingVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIFoundryHostingVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Foundry.Hosting",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.FoundryMemory (MAF legacy preview, superseded by Foundry)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIFoundryMemoryVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIFoundryMemoryVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.FoundryMemory",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.GitHub.Copilot (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIGitHubCopilotVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIGitHubCopilotVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.GitHub.Copilot",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting.A2A (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingA2AVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingA2AVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting.A2A",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting.A2A.AspNetCore (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingA2AAspNetCoreVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingA2AAspNetCoreVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting.A2A.AspNetCore",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting.AGUI.AspNetCore (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingAGUIAspNetCoreVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingAGUIAspNetCoreVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting.AzureFunctions (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingAzureFunctionsVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingAzureFunctionsVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting.AzureFunctions",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Hosting.OpenAI (MAF alpha)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIHostingOpenAIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIHostingOpenAIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Hosting.OpenAI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.OpenAI (MAF stable)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIOpenAIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIOpenAIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.OpenAI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.ProjectTemplates (MAF preview)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIProjectTemplatesVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIProjectTemplatesVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.ProjectTemplates",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Purview (MAF RC)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIPurviewVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIPurviewVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Purview",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Workflows (MAF stable)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIWorkflowsVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Workflows",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Workflows.Declarative (MAF RC)",
       "customType": "regex",
       "managerFilePatterns": ["(^|/)Version\\.props$"],
       "matchStrings": ["<MicrosoftAgentsAIWorkflowsDeclarativeVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsDeclarativeVersion>"],
       "depNameTemplate": "Microsoft.Agents.AI.Workflows.Declarative",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Workflows.Declarative.AzureAI (MAF legacy/superseded by Workflows.Declarative.Foundry)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIWorkflowsDeclarativeAzureAIVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsDeclarativeAzureAIVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Workflows.Declarative.AzureAI",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Workflows.Declarative.Foundry (MAF RC)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIWorkflowsDeclarativeFoundryVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsDeclarativeFoundryVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
+      "datasourceTemplate": "nuget"
+    },
+    {
+      "description": "Version.props — Microsoft.Agents.AI.Workflows.Generators (MAF stable)",
+      "customType": "regex",
+      "managerFilePatterns": ["(^|/)Version\\.props$"],
+      "matchStrings": ["<MicrosoftAgentsAIWorkflowsGeneratorsVersion>(?<currentValue>[^<]+)</MicrosoftAgentsAIWorkflowsGeneratorsVersion>"],
+      "depNameTemplate": "Microsoft.Agents.AI.Workflows.Generators",
       "datasourceTemplate": "nuget"
     },
     {
