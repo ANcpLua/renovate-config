@@ -9,10 +9,40 @@ Shared Renovate preset for the ANcpLua framework: `ANcpLua.NET.Sdk`,
 - Groups dependency updates by ecosystem (Roslyn, Microsoft.Extensions, AI
   clients, Meziantou, testing, OpenAPI, OpenTelemetry).
 - Defaults patch + lockfile-maintenance + npm devDep-minor to automerge.
-- Adds `customManagers` so Renovate can bump the `Version.props` indirection —
-  the workaround for [Renovate issue #2266][r2266], open since 2018.
+- Adds `customManagers` so Renovate can bump the `Version.props` symbolic-name
+  layer the consumer repos sit on top of CPM (see "Why an indirection above
+  CPM?" below).
 - Treats Microsoft Agent Framework packages as a status-tracked matrix instead
   of a single regex (see below).
+
+## Why an indirection above CPM?
+
+Renovate handles native NuGet `PackageReference` and CPM `PackageVersion`
+literals (e.g. `<PackageVersion Include="Foo" Version="1.2.3" />`) out of the
+box — and has since v23.67.0 (June 2020). The
+[2018 issue about MSBuild-property versions][r2266] was closed in November
+2020 with the recommendation to use CPM instead.
+
+The consumer repos in this family deliberately add an extra symbolic-name
+layer above CPM. Each `Directory.Packages.props` references variables defined
+in a sibling `Version.props`:
+
+```xml
+<!-- Version.props -->
+<MicrosoftAgentsAIVersion>1.3.0</MicrosoftAgentsAIVersion>
+
+<!-- Directory.Packages.props -->
+<PackageVersion Include="Microsoft.Agents.AI" Version="$(MicrosoftAgentsAIVersion)" />
+<PackageVersion Include="Microsoft.Agents.AI.Foundry" Version="$(MicrosoftAgentsAIVersion)" />
+```
+
+Renovate cannot follow `$(VarName)` substitution from CPM into a separate
+file, so the `customManagers` here parse `Version.props` directly via regex.
+This is a deliberate ergonomic choice — one bump to a symbolic name flows to
+every package in the family across every consumer — not a workaround for a
+missing Renovate feature. If a consumer drops the indirection and inlines
+literal versions in CPM, ~80% of these `customManagers` become redundant and
+Renovate's native NuGet manager takes over.
 
 [r2266]: https://github.com/renovatebot/renovate/issues/2266
 
