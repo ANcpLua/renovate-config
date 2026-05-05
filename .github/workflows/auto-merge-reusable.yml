@@ -10,15 +10,18 @@
 # Tiers:
 # 1a. Dependabot PRs: Auto-approve + auto-merge for patch/minor
 # 1b. Renovate PRs: Auto-approve + auto-merge
-# 2.  CodeRabbit approved PRs: Auto-merge when CI passes
-# 3.  Owner PRs: Auto-merge when CI passes
+# 2.  Trusted-bot fix PRs (copilot[bot]/jules[bot]/claude-code[bot] +
+#     matching branch + not draft): Auto-approve + auto-merge
+# 3.  CodeRabbit approved PRs: Auto-merge when CI passes
+# 4.  Owner PRs: Auto-merge when CI passes
 #
-# Auto-approval of agent-authored fix PRs (copilot/, jules/, claude/) was
-# intentionally removed: the workflow approving its own agent's output is a
-# rubber-stamp with no quality signal. The intended loop is:
-#   reviewer agent posts findings -> autofix workflow applies them ->
-#   re-review on push -> reviewer reaches "approved" state once findings
-#   are addressed -> Tier 2 (CodeRabbit) or Tier 3 (Owner) auto-merges.
+# Tier 2 trust model: the previous version of this lane keyed off
+# `github.actor` + branch prefix, which a human can spoof by pushing a
+# branch named `claude/foo` from their own account. The current version
+# requires `pull_request.user.login` (the immutable original author) to
+# match a known bot identity AND the branch prefix to match AND the PR
+# to not be in draft. That's a "trusted-bot" pattern, not a rubber-stamp:
+# the App, branch, and not-draft together establish intent.
 
 name: Auto-merge (reusable)
 
@@ -105,6 +108,54 @@ jobs:
         run: gh pr review --approve "$PR_URL"
 
       - name: Enable auto-merge for Renovate
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: gh pr merge --auto --squash "$PR_URL"
+
+  ai-agent-auto-merge:
+    name: AI Agent auto-merge (trusted bot identities)
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.draft == false &&
+      (
+        github.event.pull_request.user.login == 'copilot[bot]' ||
+        github.event.pull_request.user.login == 'jules[bot]' ||
+        github.event.pull_request.user.login == 'claude-code[bot]'
+      ) &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'copilot/') ||
+        startsWith(github.event.pull_request.head.ref, 'jules/') ||
+        startsWith(github.event.pull_request.head.ref, 'claude/')
+      )
+    steps:
+      - uses: actions/create-github-app-token@67e27a7eb7db372a1c61a7f9bdab8699e9ee57f7 # v2.1.4
+        id: app-token
+        with:
+          app-id: ${{ secrets.AUTOMERGE_APP_ID }}
+          private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
+
+      - name: Identify AI agent
+        id: agent
+        env:
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          case "$AUTHOR" in
+            copilot\[bot\]) echo "agent=Copilot" >> "$GITHUB_OUTPUT" ;;
+            jules\[bot\])   echo "agent=Jules"   >> "$GITHUB_OUTPUT" ;;
+            claude-code\[bot\]) echo "agent=Claude" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Auto-approve AI agent PRs
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          AGENT: ${{ steps.agent.outputs.agent }}
+        run: |
+          echo "Auto-approving $AGENT PR"
+          gh pr review --approve "$PR_URL" --body "✅ Auto-approved: $AGENT autonomous fix PR (trusted-bot identity verified)"
+
+      - name: Enable auto-merge for AI agent PRs
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
