@@ -10,9 +10,15 @@
 # Tiers:
 # 1a. Dependabot PRs: Auto-approve + auto-merge for patch/minor
 # 1b. Renovate PRs: Auto-approve + auto-merge
-# 2.  AI Agent fix PRs (copilot/, jules/, claude/): Auto-merge when CI passes
-# 3.  CodeRabbit approved PRs: Auto-merge when CI passes
-# 4.  Owner PRs: Auto-merge when CI passes
+# 2.  CodeRabbit approved PRs: Auto-merge when CI passes
+# 3.  Owner PRs: Auto-merge when CI passes
+#
+# Auto-approval of agent-authored fix PRs (copilot/, jules/, claude/) was
+# intentionally removed: the workflow approving its own agent's output is a
+# rubber-stamp with no quality signal. The intended loop is:
+#   reviewer agent posts findings -> autofix workflow applies them ->
+#   re-review on push -> reviewer reaches "approved" state once findings
+#   are addressed -> Tier 2 (CodeRabbit) or Tier 3 (Owner) auto-merges.
 
 name: Auto-merge (reusable)
 
@@ -99,51 +105,6 @@ jobs:
         run: gh pr review --approve "$PR_URL"
 
       - name: Enable auto-merge for Renovate
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
-
-  ai-agent-auto-merge:
-    name: AI Agent auto-merge
-    runs-on: ubuntu-latest
-    if: |
-      (github.actor == 'copilot[bot]' || github.actor == 'jules[bot]' || github.actor == 'claude-code[bot]') &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'copilot/') ||
-        startsWith(github.event.pull_request.head.ref, 'jules/') ||
-        startsWith(github.event.pull_request.head.ref, 'claude/')
-      )
-    steps:
-      - uses: actions/create-github-app-token@67e27a7eb7db372a1c61a7f9bdab8699e9ee57f7 # v2.1.4
-        id: app-token
-        with:
-          app-id: ${{ secrets.AUTOMERGE_APP_ID }}
-          private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
-
-      - name: Identify AI agent
-        id: agent
-        env:
-          BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          if [[ "$BRANCH" == copilot/* ]]; then
-            echo "agent=Copilot" >> "$GITHUB_OUTPUT"
-          elif [[ "$BRANCH" == jules/* ]]; then
-            echo "agent=Jules" >> "$GITHUB_OUTPUT"
-          elif [[ "$BRANCH" == claude/* ]]; then
-            echo "agent=Claude" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Auto-approve AI agent PRs
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          AGENT: ${{ steps.agent.outputs.agent }}
-        run: |
-          echo "Auto-approving $AGENT PR"
-          gh pr review --approve "$PR_URL" --body "✅ Auto-approved: $AGENT autonomous fix PR"
-
-      - name: Enable auto-merge for AI agent PRs
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
