@@ -5,6 +5,8 @@ Shared Renovate preset for `ANcpLua.NET.Sdk`, `ANcpLua.Roslyn.Utilities`,
 
 ## Usage
 
+### 1. Renovate preset
+
 ```jsonc
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
@@ -20,6 +22,39 @@ Per-repo self-bump pattern (in the consumer's local `renovate.json`):
 | `ANcpLua.Roslyn.Utilities` | `/^ANcpLua\\.Roslyn\\.Utilities/` |
 | `ANcpLua.Analyzers` | `/^ANcpLua\\.Analyzers/`, `/^Dummy/` |
 | `ANcpLua.Agents` | `/^ANcpLua\\.Agents/` |
+
+### 2. Auto-merge reusable workflow
+
+`.github/workflows/auto-merge-reusable.yml` is a [reusable workflow](https://docs.github.com/en/actions/using-workflows/reusing-workflows) — single source of truth for auto-merge tiers across the framework. Each consumer repo has a thin caller:
+
+```yaml
+# .github/workflows/auto-merge.yml in each consumer repo
+name: Auto-merge
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  auto-merge:
+    uses: ANcpLua/renovate-config/.github/workflows/auto-merge-reusable.yml@main
+    secrets: inherit
+```
+
+**Required secrets** (per consumer repo, or org-level if available):
+- `AUTOMERGE_APP_ID` — GitHub App ID
+- `AUTOMERGE_APP_PRIVATE_KEY` — full PEM contents of the App's private key
+
+**Why a GitHub App, not GITHUB_TOKEN?** When auto-merge fires under GITHUB_TOKEN identity, the resulting `push: main` event is silently filtered by GitHub's anti-loop protection — downstream publish workflows never run. Using an App installation token makes the App the merge actor, so push events fire normally. See [GitHub docs](https://docs.github.com/en/actions/security-guides/automatic-token-authentication).
+
+**One-time App setup**:
+1. Create a GitHub App at <https://github.com/settings/apps/new> with permissions: Repository → Contents (Write), Pull requests (Write).
+2. Generate a private key, download the `.pem` file.
+3. Install the App on each consumer repo (or org-wide).
+4. In each repo's secrets, set `AUTOMERGE_APP_ID` (the numeric App ID) and `AUTOMERGE_APP_PRIVATE_KEY` (full PEM contents including BEGIN/END lines).
 
 ## Why customManagers exist
 
