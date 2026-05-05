@@ -1,9 +1,10 @@
 // Validates that default.json's Microsoft Agent Framework rules match
-// data/microsoft-agent-framework-packages.json (the authoritative 2026-05-05 matrix).
+// data/microsoft-agent-framework-packages.json (the authoritative local matrix).
 // Run with: node scripts/assert-maf-config.mjs
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
@@ -12,17 +13,49 @@ const config = JSON.parse(readFileSync(resolve(repoRoot, "default.json"), "utf8"
 const matrix = JSON.parse(readFileSync(resolve(repoRoot, "data/microsoft-agent-framework-packages.json"), "utf8"));
 
 const failures = [];
-const assert = (cond, msg) => { if (!cond) failures.push(msg); };
+const assert = (condition, message) => {
+  if (!condition) failures.push(message);
+};
 
+const EXPECTED_AS_OF = "2026-05-05";
+const EXPECTED_SUMMARY = { stable: 6, rc: 6, preview: 18, alpha: 1, total: 31 };
 const STATUS_ORDER = ["stable", "rc", "preview", "alpha"];
 const STATUSES = new Set(STATUS_ORDER);
 
-const stableRegexLiteral = "/^\\d+\\.\\d+\\.\\d+$/";
-const rcRegexLiteral = "/^\\d+\\.\\d+\\.\\d+(?:-rc(?:\\.?\\d+(?:\\.\\d+)*)?)?$/i";
+const EXPECTED_STABLE = [
+  "Microsoft.Agents.AI",
+  "Microsoft.Agents.AI.Abstractions",
+  "Microsoft.Agents.AI.Foundry",
+  "Microsoft.Agents.AI.OpenAI",
+  "Microsoft.Agents.AI.Workflows",
+  "Microsoft.Agents.AI.Workflows.Generators"
+].sort();
+
+const EXPECTED_ACTIVE_RC = [
+  "Microsoft.Agents.AI.Declarative",
+  "Microsoft.Agents.AI.Purview",
+  "Microsoft.Agents.AI.Workflows.Declarative",
+  "Microsoft.Agents.AI.Workflows.Declarative.Foundry"
+].sort();
+
+const EXPECTED_SUPERSEDED = {
+  "Microsoft.Agents.AI.AzureAI": "Microsoft.Agents.AI.Foundry",
+  "Microsoft.Agents.AI.Workflows.Declarative.AzureAI": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
+  "Microsoft.Agents.AI.FoundryMemory": "Microsoft.Agents.AI.Foundry"
+};
+
+const EXPECTED_SOURCE_OBSERVED = [
+  "Microsoft.Agents.AI.Hyperlight",
+  "Microsoft.Agents.AI.Hosting.AzureAIResponses",
+  "Microsoft.Agents.AI.Mem0",
+  "Microsoft.Agents.AI.Workflows.Declarative.Mcp"
+].sort();
+
+const STABLE_ALLOWED = "/^\\d+\\.\\d+\\.\\d+$/";
+const RC_ALLOWED = "/^\\d+\\.\\d+\\.\\d+(?:-[Rr][Cc]\\d+)?$/";
 
 function compileAllowedVersionsRegex(literal) {
-  // Renovate allowedVersions slash-form: /pattern/flags
-  const match = /^\/(.+)\/([a-z]*)$/.exec(literal);
+  const match = /^\/(.*)\/([a-z]*)$/i.exec(literal);
   if (!match) throw new Error(`Bad allowedVersions literal: ${literal}`);
   return new RegExp(match[1], match[2]);
 }
@@ -33,212 +66,258 @@ function findRule(predicate, label) {
     failures.push(`Missing rule: ${label}`);
     return { rule: null, idx: -1 };
   }
+
   return { rule: config.packageRules[idx], idx };
 }
 
-// ---- summary counts ----
-const expectedSummary = { stable: 6, rc: 6, preview: 18, alpha: 1, total: 31 };
-for (const key of Object.keys(expectedSummary)) {
-  assert(matrix.summary[key] === expectedSummary[key],
-    `summary.${key} expected ${expectedSummary[key]}, got ${matrix.summary[key]}`);
+function sorted(values) {
+  return [...values].sort((a, b) => a.localeCompare(b));
 }
 
-// ---- packages array integrity ----
+function sameSet(actual, expected) {
+  const a = sorted(actual);
+  const e = sorted(expected);
+  return a.length === e.length && a.every((value, index) => value === e[index]);
+}
+
+function packageNamesFor(rule) {
+  return Array.isArray(rule?.matchPackageNames) ? rule.matchPackageNames : [];
+}
+
+function assertExactNames(rule, expected, label) {
+  const actual = packageNamesFor(rule);
+  assert(
+    sameSet(actual, expected),
+    `${label} matchPackageNames mismatch.\n  expected: ${sorted(expected).join(", ")}\n  got:      ${sorted(actual).join(", ")}`
+  );
+  for (const name of actual) {
+    assert(!name.startsWith("/"), `${label} must use exact package names, got regex ${name}`);
+  }
+}
+
+function assertNoMatchUpdateTypes(rule, label) {
+  assert(!("matchUpdateTypes" in rule), `${label} must not combine allowedVersions with matchUpdateTypes`);
+}
+
+function assertAutomergePr(rule, label) {
+  assert(rule.automerge === true, `${label} must set automerge: true`);
+  assert(rule.automergeType === "pr", `${label} must set automergeType: "pr"`);
+}
+
+// ---- matrix integrity ----
+assert(matrix.asOf === EXPECTED_AS_OF, `matrix.asOf expected ${EXPECTED_AS_OF}, got ${matrix.asOf}`);
 assert(Array.isArray(matrix.packages), "matrix.packages must be an array");
-assert(matrix.packages.length === expectedSummary.total,
-  `matrix.packages.length expected ${expectedSummary.total}, got ${matrix.packages.length}`);
+assert(matrix.packages.length === EXPECTED_SUMMARY.total, `published package count expected ${EXPECTED_SUMMARY.total}, got ${matrix.packages.length}`);
 
 const seenNames = new Set();
-const byStatus = { stable: [], rc: [], preview: [], alpha: [] };
-for (const pkg of matrix.packages) {
+const packagesByName = new Map();
+const byStatus = Object.fromEntries(STATUS_ORDER.map(status => [status, []]));
+for (const pkg of matrix.packages ?? []) {
+  assert(typeof pkg.name === "string" && pkg.name.length > 0, `package missing name: ${JSON.stringify(pkg)}`);
+  assert(typeof pkg.version === "string" && pkg.version.length > 0, `${pkg.name} missing version`);
   assert(STATUSES.has(pkg.status), `unknown status for ${pkg.name}: ${pkg.status}`);
   assert(!seenNames.has(pkg.name), `duplicate package name: ${pkg.name}`);
   seenNames.add(pkg.name);
-  if (byStatus[pkg.status]) byStatus[pkg.status].push(pkg.name);
-  if (pkg.status === "stable" || pkg.status === "rc") {
-    assert(pkg.description && pkg.description.length > 0,
-      `${pkg.status} package missing description: ${pkg.name}`);
-  }
+  packagesByName.set(pkg.name, pkg);
+  byStatus[pkg.status]?.push(pkg);
 }
 
 for (const status of STATUS_ORDER) {
-  assert(byStatus[status].length === expectedSummary[status],
-    `bucket ${status} count expected ${expectedSummary[status]}, got ${byStatus[status].length}`);
+  assert(matrix.summary?.[status] === EXPECTED_SUMMARY[status], `summary.${status} expected ${EXPECTED_SUMMARY[status]}, got ${matrix.summary?.[status]}`);
+  assert(byStatus[status].length === EXPECTED_SUMMARY[status], `actual ${status} count expected ${EXPECTED_SUMMARY[status]}, got ${byStatus[status].length}`);
+}
+assert(matrix.summary?.total === EXPECTED_SUMMARY.total, `summary.total expected ${EXPECTED_SUMMARY.total}, got ${matrix.summary?.total}`);
+
+const sortedExpected = [...(matrix.packages ?? [])].sort((a, b) => {
+  const statusDiff = STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status);
+  return statusDiff || a.name.localeCompare(b.name);
+});
+for (let i = 0; i < sortedExpected.length; i++) {
+  assert(matrix.packages[i].name === sortedExpected[i].name, `packages not sorted at index ${i}: expected ${sortedExpected[i].name}, got ${matrix.packages[i].name}`);
 }
 
-// ---- supersededBy correctness ----
-const expectedSuperseded = {
-  "Microsoft.Agents.AI.AzureAI": "Microsoft.Agents.AI.Foundry",
-  "Microsoft.Agents.AI.Workflows.Declarative.AzureAI": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
-  "Microsoft.Agents.AI.FoundryMemory": "Microsoft.Agents.AI.Foundry"
-};
+// ---- track-specific matrix assertions ----
+const stablePackages = byStatus.stable.map(pkg => pkg.name);
+assert(sameSet(stablePackages, EXPECTED_STABLE), `stable packages must be exactly ${EXPECTED_STABLE.join(", ")}`);
+for (const name of EXPECTED_STABLE) {
+  const pkg = packagesByName.get(name);
+  assert(pkg?.version === "1.4.0", `${name} expected version 1.4.0, got ${pkg?.version}`);
+  assert(/^\d+\.\d+\.\d+$/.test(pkg?.version ?? ""), `${name} must have a stable semver version, got ${pkg?.version}`);
+}
+
+const rcPackages = byStatus.rc.map(pkg => pkg.name);
+const activeRcPackages = byStatus.rc.filter(pkg => !pkg.supersededBy).map(pkg => pkg.name);
+assert(activeRcPackages.length === 4, `active RC count expected 4, got ${activeRcPackages.length}`);
+assert(sameSet(activeRcPackages, EXPECTED_ACTIVE_RC), `active RC packages must be exactly ${EXPECTED_ACTIVE_RC.join(", ")}`);
+for (const name of EXPECTED_ACTIVE_RC) {
+  const pkg = packagesByName.get(name);
+  assert(pkg?.version === "1.4.0-rc1", `${name} expected version 1.4.0-rc1, got ${pkg?.version}`);
+  assert(/^\d+\.\d+\.\d+-[Rr][Cc]\d+$/.test(pkg?.version ?? ""), `${name} must have an rc semver version, got ${pkg?.version}`);
+}
+assert(rcPackages.length === EXPECTED_SUMMARY.rc, `published RC count expected ${EXPECTED_SUMMARY.rc}, got ${rcPackages.length}`);
+
 const supersededInMatrix = Object.fromEntries(
-  matrix.packages.filter(p => p.supersededBy).map(p => [p.name, p.supersededBy])
+  [...packagesByName.values()].filter(pkg => pkg.supersededBy).map(pkg => [pkg.name, pkg.supersededBy])
 );
-for (const [name, target] of Object.entries(expectedSuperseded)) {
-  assert(supersededInMatrix[name] === target,
-    `${name} supersededBy expected ${target}, got ${supersededInMatrix[name]}`);
+for (const [name, target] of Object.entries(EXPECTED_SUPERSEDED)) {
+  assert(supersededInMatrix[name] === target, `${name} supersededBy expected ${target}, got ${supersededInMatrix[name]}`);
 }
 for (const [name] of Object.entries(supersededInMatrix)) {
-  assert(name in expectedSuperseded, `unexpected supersededBy entry: ${name}`);
+  assert(name in EXPECTED_SUPERSEDED, `unexpected superseded package: ${name}`);
 }
 
-// ---- packages sorted by status (stable, rc, preview, alpha) then name ----
-const sortedExpected = [...matrix.packages].sort((a, b) => {
-  const sa = STATUS_ORDER.indexOf(a.status);
-  const sb = STATUS_ORDER.indexOf(b.status);
-  if (sa !== sb) return sa - sb;
-  return a.name.localeCompare(b.name);
-});
-for (let i = 0; i < matrix.packages.length; i++) {
-  assert(matrix.packages[i].name === sortedExpected[i].name,
-    `packages not sorted: at index ${i} expected ${sortedExpected[i].name}, got ${matrix.packages[i].name}`);
+const previewAlphaPackages = [...byStatus.preview, ...byStatus.alpha].map(pkg => pkg.name);
+assert(previewAlphaPackages.length === EXPECTED_SUMMARY.preview + EXPECTED_SUMMARY.alpha, `preview/alpha quarantine count expected 19, got ${previewAlphaPackages.length}`);
+
+const sourceObserved = matrix.sourceObservedPackages ?? [];
+assert(Array.isArray(sourceObserved), "matrix.sourceObservedPackages must be an array");
+assert(sameSet(sourceObserved.map(pkg => pkg.name), EXPECTED_SOURCE_OBSERVED), `source-observed packages must be exactly ${EXPECTED_SOURCE_OBSERVED.join(", ")}`);
+for (const pkg of sourceObserved) {
+  assert(pkg.activeNuGetOrgAllowlist === false, `${pkg.name} must set activeNuGetOrgAllowlist: false`);
+  assert(!packagesByName.has(pkg.name), `${pkg.name} must not be counted in matrix.packages`);
 }
 
-// ---- expected MAF rule contents ----
-const stableNonSuperseded = byStatus.stable.slice().sort();
-const rcActive = matrix.packages
-  .filter(p => p.status === "rc" && !p.supersededBy).map(p => p.name).sort();
-const previewNonSuperseded = matrix.packages
-  .filter(p => p.status === "preview" && !p.supersededBy).map(p => p.name);
-const alphaNames = byStatus.alpha.slice();
-const quarantineExpected = [...previewNonSuperseded, ...alphaNames].sort();
+// ---- Renovate rule assertions ----
+assert(config.platformAutomerge === true, "platformAutomerge should remain true");
+assert(config.prHourlyLimit === 2, `prHourlyLimit should remain 2, got ${config.prHourlyLimit}`);
+assert(config.prConcurrentLimit === 5, `prConcurrentLimit should remain 5, got ${config.prConcurrentLimit}`);
 
-assert(stableNonSuperseded.length === 6, `stable bucket length expected 6, got ${stableNonSuperseded.length}`);
-assert(rcActive.length === 4, `rc-active expected 4, got ${rcActive.length}`);
-assert(quarantineExpected.length === 18, `quarantine expected 18, got ${quarantineExpected.length}`);
+const globalMajor = findRule(
+  rule => Array.isArray(rule.matchUpdateTypes) && rule.matchUpdateTypes.includes("major") && rule.automerge === false && !rule.groupName,
+  "global major manual-review"
+);
+const mafStable = findRule(rule => rule.groupName === "microsoft-agent-framework-stable", "MAF stable allowlist");
+const mafRc = findRule(rule => rule.groupName === "microsoft-agent-framework-rc", "MAF active RC allowlist");
+const mafQuarantine = findRule(rule => rule.groupName === "microsoft-agent-framework-preview-alpha-quarantine", "MAF preview/alpha quarantine");
 
-// ---- locate rules ----
-const isMafStable = r => r.groupName === "microsoft-agent-framework-stable";
-const isMafRc = r => r.groupName === "microsoft-agent-framework-rc";
-const isMafQuarantine = r => r.groupName === "microsoft-agent-framework-preview-alpha-quarantine";
-const isGlobalMajor = r => Array.isArray(r.matchUpdateTypes) && r.matchUpdateTypes.includes("major")
-  && !r.groupName && r.automerge === false;
-
-const stable = findRule(isMafStable, "MAF stable allowlist");
-const rc = findRule(isMafRc, "MAF RC allowlist");
-const quarantine = findRule(isMafQuarantine, "MAF preview/alpha quarantine");
-const major = findRule(isGlobalMajor, "global major manual-review");
-
-const eqSet = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
-
-if (stable.rule) {
-  const got = [...stable.rule.matchPackageNames].sort();
-  assert(eqSet(got, stableNonSuperseded),
-    `MAF stable matchPackageNames mismatch.\n  expected: ${stableNonSuperseded.join(",")}\n  got:      ${got.join(",")}`);
-  assert(stable.rule.allowedVersions === stableRegexLiteral,
-    `MAF stable allowedVersions expected ${stableRegexLiteral}, got ${stable.rule.allowedVersions}`);
-  assert(stable.rule.automerge === true, "MAF stable should automerge");
-  assert(!("matchUpdateTypes" in stable.rule),
-    "MAF stable rule must not combine allowedVersions with matchUpdateTypes");
+if (mafStable.rule) {
+  assertExactNames(mafStable.rule, EXPECTED_STABLE, "MAF stable");
+  assert(JSON.stringify(mafStable.rule.matchDatasources) === JSON.stringify(["nuget"]), "MAF stable must match only the nuget datasource");
+  assert(mafStable.rule.allowedVersions === STABLE_ALLOWED, `MAF stable allowedVersions expected ${STABLE_ALLOWED}, got ${mafStable.rule.allowedVersions}`);
+  assertAutomergePr(mafStable.rule, "MAF stable");
+  assert(mafStable.rule.dependencyDashboardApproval === false, "MAF stable must not require dashboard approval");
+  assertNoMatchUpdateTypes(mafStable.rule, "MAF stable");
 }
 
-if (rc.rule) {
-  const got = [...rc.rule.matchPackageNames].sort();
-  assert(eqSet(got, rcActive),
-    `MAF RC matchPackageNames mismatch.\n  expected: ${rcActive.join(",")}\n  got:      ${got.join(",")}`);
-  assert(rc.rule.ignoreUnstable === false, "MAF RC rule must set ignoreUnstable: false");
-  assert(rc.rule.respectLatest === false, "MAF RC rule must set respectLatest: false");
-  assert(rc.rule.allowedVersions === rcRegexLiteral,
-    `MAF RC allowedVersions expected ${rcRegexLiteral}, got ${rc.rule.allowedVersions}`);
-  assert(rc.rule.automerge === true, "MAF RC should automerge");
-  assert(!("matchUpdateTypes" in rc.rule),
-    "MAF RC rule must not combine allowedVersions with matchUpdateTypes");
+if (mafRc.rule) {
+  assertExactNames(mafRc.rule, EXPECTED_ACTIVE_RC, "MAF active RC");
+  assert(JSON.stringify(mafRc.rule.matchDatasources) === JSON.stringify(["nuget"]), "MAF active RC must match only the nuget datasource");
+  assert(mafRc.rule.ignoreUnstable === false, "MAF active RC must set ignoreUnstable: false");
+  assert(mafRc.rule.respectLatest === false, "MAF active RC must set respectLatest: false");
+  assert(mafRc.rule.allowedVersions === RC_ALLOWED, `MAF active RC allowedVersions expected ${RC_ALLOWED}, got ${mafRc.rule.allowedVersions}`);
+  assertAutomergePr(mafRc.rule, "MAF active RC");
+  assert(mafRc.rule.dependencyDashboardApproval === false, "MAF active RC must not require dashboard approval");
+  assertNoMatchUpdateTypes(mafRc.rule, "MAF active RC");
 }
 
-if (quarantine.rule) {
-  const got = [...quarantine.rule.matchPackageNames].sort();
-  assert(eqSet(got, quarantineExpected),
-    `MAF quarantine matchPackageNames mismatch.\n  expected: ${quarantineExpected.join(",")}\n  got:      ${got.join(",")}`);
-  assert(quarantine.rule.automerge === false, "MAF quarantine rule must not automerge");
-  assert(quarantine.rule.dependencyDashboardApproval === true,
-    "MAF quarantine rule must require dashboard approval");
-  assert(!("matchUpdateTypes" in quarantine.rule),
-    "MAF quarantine rule must not combine allowedVersions with matchUpdateTypes");
+if (mafQuarantine.rule) {
+  assertExactNames(mafQuarantine.rule, previewAlphaPackages, "MAF preview/alpha quarantine");
+  assert(JSON.stringify(mafQuarantine.rule.matchDatasources) === JSON.stringify(["nuget"]), "MAF quarantine must match only the nuget datasource");
+  assert(mafQuarantine.rule.ignoreUnstable === false, "MAF quarantine must set ignoreUnstable: false");
+  assert(mafQuarantine.rule.respectLatest === false, "MAF quarantine must set respectLatest: false");
+  assert(mafQuarantine.rule.allowedVersions === RC_ALLOWED, `MAF quarantine allowedVersions expected ${RC_ALLOWED}, got ${mafQuarantine.rule.allowedVersions}`);
+  assert(mafQuarantine.rule.automerge === false, "MAF quarantine must not automerge");
+  assert(mafQuarantine.rule.dependencyDashboardApproval === true, "MAF quarantine must require dependency dashboard approval");
+  assertNoMatchUpdateTypes(mafQuarantine.rule, "MAF quarantine");
 }
 
-// ---- replacement rules ----
-const replacementRules = config.packageRules.filter(r =>
-  typeof r.replacementName === "string" && Array.isArray(r.matchPackageNames));
-const replacementByFrom = {};
-for (const r of replacementRules) {
-  if (r.matchPackageNames.length !== 1) {
-    failures.push(`replacement rule should target exactly one package: ${JSON.stringify(r.matchPackageNames)}`);
-    continue;
+if (globalMajor.idx !== -1) {
+  assert(mafStable.idx > globalMajor.idx, `MAF stable rule (idx ${mafStable.idx}) must come after global major rule (idx ${globalMajor.idx})`);
+  assert(mafRc.idx > globalMajor.idx, `MAF active RC rule (idx ${mafRc.idx}) must come after global major rule (idx ${globalMajor.idx})`);
+}
+
+const replacementRules = config.packageRules.filter(rule => typeof rule.replacementName === "string");
+const replacementBySource = new Map();
+for (const rule of replacementRules) {
+  const names = packageNamesFor(rule);
+  assert(names.length === 1, `replacement rule should target exactly one package: ${JSON.stringify(names)}`);
+  if (names.length === 1) replacementBySource.set(names[0], rule);
+}
+
+for (const [from, to] of Object.entries(EXPECTED_SUPERSEDED)) {
+  const rule = replacementBySource.get(from);
+  assert(!!rule, `missing replacement rule for ${from}`);
+  if (!rule) continue;
+  assert(rule.replacementName === to, `replacement ${from} expected ${to}, got ${rule.replacementName}`);
+  assert(rule.automerge === false, `replacement ${from} must not automerge`);
+  assert(rule.dependencyDashboardApproval === true, `replacement ${from} must require dependency dashboard approval`);
+  assert(Array.isArray(rule.prBodyNotes) && rule.prBodyNotes.some(note => /customManagers|custom\.regex|regex-managed|Version\.props/i.test(note)), `replacement ${from} must document regex customManagers / Version.props rename limitation`);
+}
+
+// ---- global Renovate policy assertions ----
+config.packageRules.forEach((rule, index) => {
+  if (rule.allowedVersions && rule.matchUpdateTypes) {
+    failures.push(`packageRules[${index}] combines allowedVersions and matchUpdateTypes`);
   }
-  replacementByFrom[r.matchPackageNames[0]] = r;
-}
-const expectedReplacements = {
-  "Microsoft.Agents.AI.AzureAI": { name: "Microsoft.Agents.AI.Foundry", version: "1.3.0" },
-  "Microsoft.Agents.AI.Workflows.Declarative.AzureAI": { name: "Microsoft.Agents.AI.Workflows.Declarative.Foundry", version: "1.3.0-rc1" },
-  "Microsoft.Agents.AI.FoundryMemory": { name: "Microsoft.Agents.AI.Foundry", version: "1.3.0" }
-};
-for (const [from, target] of Object.entries(expectedReplacements)) {
-  const r = replacementByFrom[from];
-  if (!r) { failures.push(`missing replacement rule for ${from}`); continue; }
-  assert(r.replacementName === target.name,
-    `replacement ${from} → expected ${target.name}, got ${r.replacementName}`);
-  assert(r.replacementVersion === target.version,
-    `replacement ${from} version expected ${target.version}, got ${r.replacementVersion}`);
-  assert(r.automerge === false, `replacement ${from} must not automerge`);
-  assert(r.dependencyDashboardApproval === true,
-    `replacement ${from} must require dashboard approval`);
-}
 
-// ---- no allowedVersions + matchUpdateTypes combo anywhere ----
-config.packageRules.forEach((r, i) => {
-  if (r.allowedVersions && r.matchUpdateTypes) {
-    failures.push(`packageRules[${i}] combines allowedVersions and matchUpdateTypes — forbidden`);
+  const hasBroadMafRegex = packageNamesFor(rule).some(name => /^\/\^Microsoft\\\.Agents\\\.AI(?:\\\.|\b)/.test(name));
+  if (hasBroadMafRegex && rule.automerge === true) {
+    failures.push(`packageRules[${index}] is a broad Microsoft.Agents.AI automerge regex`);
   }
 });
 
-// ---- no broad ^Microsoft\.Agents\.AI automerge rule ----
-config.packageRules.forEach((r, i) => {
-  const names = r.matchPackageNames || [];
-  const hasBroad = names.some(n => /^\/\^Microsoft\\\.Agents\\\.AI/i.test(n));
-  if (hasBroad && r.automerge === true) {
-    failures.push(`packageRules[${i}] is a broad Microsoft.Agents.AI rule with automerge: true — forbidden`);
+const npmDeny = findRule(
+  rule => Array.isArray(rule.matchManagers) && rule.matchManagers.includes("npm") && typeof rule.allowedVersions === "string" && rule.allowedVersions.startsWith("!/"),
+  "default-deny unstable npm"
+);
+if (npmDeny.rule) {
+  for (const token of ["alpha", "beta", "rc", "preview", "pre", "dev", "canary", "next", "nightly"]) {
+    assert(new RegExp(token, "i").test(npmDeny.rule.allowedVersions), `npm default-deny must block ${token}`);
   }
-});
+}
 
-// ---- ordering: stable + RC must come AFTER global major rule ----
-if (major.idx !== -1) {
-  if (stable.idx !== -1) {
-    assert(stable.idx > major.idx,
-      `MAF stable rule (idx ${stable.idx}) must come AFTER global major rule (idx ${major.idx})`);
+const nugetDeny = findRule(
+  rule => Array.isArray(rule.matchDatasources) && rule.matchDatasources.includes("nuget") && typeof rule.allowedVersions === "string" && rule.allowedVersions.startsWith("!/"),
+  "default-deny unstable NuGet"
+);
+if (nugetDeny.rule) {
+  for (const token of ["alpha", "beta", "preview", "pre", "dev", "experimental", "nightly"]) {
+    assert(new RegExp(token, "i").test(nugetDeny.rule.allowedVersions), `NuGet default-deny must block ${token}`);
   }
-  if (rc.idx !== -1) {
-    assert(rc.idx > major.idx,
-      `MAF RC rule (idx ${rc.idx}) must come AFTER global major rule (idx ${major.idx})`);
+  assert(!/\brc\b/i.test(nugetDeny.rule.allowedVersions), "NuGet default-deny must not globally block rc");
+}
+
+for (const observed of EXPECTED_SOURCE_OBSERVED) {
+  const activeRules = [mafStable.rule, mafRc.rule, mafQuarantine.rule].filter(Boolean);
+  for (const rule of activeRules) {
+    assert(!packageNamesFor(rule).includes(observed), `${observed} must not appear in active MAF NuGet.org allowlist/quarantine rules`);
   }
 }
 
 // ---- allowedVersions regex behavior ----
-const stableRe = compileAllowedVersionsRegex(stableRegexLiteral);
-const rcRe = compileAllowedVersionsRegex(rcRegexLiteral);
+const stableAllowed = compileAllowedVersionsRegex(STABLE_ALLOWED);
+const rcAllowed = compileAllowedVersionsRegex(RC_ALLOWED);
 
-const stableShouldAccept = ["1.3.0"];
-const stableShouldReject = ["1.3.0-rc1", "1.3.0-preview.260423.1", "1.3.0-alpha.260423.1", "1.3.0-beta.1"];
-for (const v of stableShouldAccept) {
-  assert(stableRe.test(v), `stable regex should accept ${v}`);
+for (const version of ["1.4.0", "2.0.0"]) {
+  assert(stableAllowed.test(version), `stable regex should accept ${version}`);
+  assert(rcAllowed.test(version), `RC/quarantine regex should accept stable ${version}`);
 }
-for (const v of stableShouldReject) {
-  assert(!stableRe.test(v), `stable regex should reject ${v}`);
+for (const version of ["1.4.0-rc1", "1.4.0-RC2"]) {
+  assert(!stableAllowed.test(version), `stable regex should reject ${version}`);
+  assert(rcAllowed.test(version), `RC/quarantine regex should accept ${version}`);
 }
-
-const rcShouldAccept = ["1.3.0", "1.3.0-rc1", "1.3.0-rc.1"];
-const rcShouldReject = ["1.3.0-preview.260423.1", "1.3.0-alpha.260423.1", "1.3.0-beta.1", "1.3.0-dev.1", "1.3.0-nightly.1"];
-for (const v of rcShouldAccept) {
-  assert(rcRe.test(v), `rc regex should accept ${v}`);
-}
-for (const v of rcShouldReject) {
-  assert(!rcRe.test(v), `rc regex should reject ${v}`);
+for (const version of ["1.4.0-rc.1", "1.4.0-preview.260505.1", "1.4.0-alpha.260505.1", "1.4.0-beta.1", "1.4.0-dev.1", "1.4.0-nightly.1"]) {
+  assert(!stableAllowed.test(version), `stable regex should reject ${version}`);
+  assert(!rcAllowed.test(version), `RC/quarantine regex should reject ${version}`);
 }
 
-// ---- summary ----
 if (failures.length > 0) {
   console.error("MAF config assertion failures:");
-  for (const f of failures) console.error("  - " + f);
+  for (const failure of failures) console.error(`  - ${failure}`);
   process.exit(1);
 }
-console.log(`MAF config OK — ${matrix.packages.length} packages, ${replacementRules.length} replacement rules, regex behavior verified.`);
+
+try {
+  execFileSync(
+    "npx",
+    ["--yes", "renovate-config-validator", "--strict", "--no-global", "default.json"],
+    { cwd: repoRoot, stdio: "pipe", encoding: "utf8" }
+  );
+} catch (error) {
+  console.error("renovate-config-validator failed:");
+  if (error.stdout) console.error(error.stdout.trim());
+  if (error.stderr) console.error(error.stderr.trim());
+  process.exit(error.status || 1);
+}
+
+console.log(`MAF config OK - ${matrix.packages.length} published packages, ${sourceObserved.length} observed non-allowlist packages, ${replacementRules.length} replacement rules.`);
