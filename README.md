@@ -74,14 +74,43 @@ takes over.
 
 ## Microsoft Agent Framework matrix (2026-05-05)
 
-Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/microsoft-agent-framework-packages.json) — 31 packages: 6 stable, 6 rc (4 active, 2 superseded), 18 preview (17 active, 1 superseded), 1 alpha.
+Authoritative local data: [`data/microsoft-agent-framework-packages.json`](data/microsoft-agent-framework-packages.json). The active NuGet.org profile count is 31 packages: 6 stable, 6 RC (4 active, 2 superseded), 18 preview (17 active, 1 superseded), and 1 alpha.
 
 | Track | Behavior |
 |---|---|
-| Stable (6) | `allowedVersions: /^\d+\.\d+\.\d+$/` — automerge incl. majors, stable only |
-| RC (4 active) | `allowedVersions: /^\d+\.\d+\.\d+(?:-rc...)?$/i` + `ignoreUnstable:false` — automerge incl. majors, stable + `-rc` only |
-| Preview/alpha quarantine (18) | Same allowed-versions regex as RC; `automerge:false` + `dependencyDashboardApproval:true`. Renovate cannot propose new preview/alpha bumps; only graduation PRs to stable/RC open |
+| Stable (6) | `allowedVersions: /^\d+\.\d+\.\d+$/` — automerge including majors, stable only |
+| RC (4 active) | `allowedVersions: /^\d+\.\d+\.\d+(?:-[Rr][Cc]\d+)?$/` + `ignoreUnstable:false` — automerge including majors, stable or `-rcN` only |
+| Preview/alpha quarantine (19 names) | Same allowed-versions regex as RC; `automerge:false` + `dependencyDashboardApproval:true`. Renovate cannot propose new preview/alpha bumps; only graduation PRs to stable/RC can open, and those require manual approval unless explicitly allowlisted |
 | Superseded (3) | `replacementName` rules → `Foundry` family, manual approval |
+
+Stable allowlist:
+
+```text
+Microsoft.Agents.AI
+Microsoft.Agents.AI.Abstractions
+Microsoft.Agents.AI.Foundry
+Microsoft.Agents.AI.OpenAI
+Microsoft.Agents.AI.Workflows
+Microsoft.Agents.AI.Workflows.Generators
+```
+
+Active RC allowlist:
+
+```text
+Microsoft.Agents.AI.Declarative
+Microsoft.Agents.AI.Purview
+Microsoft.Agents.AI.Workflows.Declarative
+Microsoft.Agents.AI.Workflows.Declarative.Foundry
+```
+
+Source or alternate-feed observations are recorded as tripwires, not as active NuGet.org allowlist entries:
+
+| Package | Status |
+|---|---|
+| `Microsoft.Agents.AI.Hyperlight` | Source-observed for Hyperlight CodeAct integration; not in the MicrosoftAgentFramework NuGet.org profile |
+| `Microsoft.Agents.AI.Mem0` | Source-observed in `dotnet-1.4.0`; the project has `IsPackable=false`. A live NuGet.org flat-container lookup also returned an older `1.0.0-preview.251028.1`, so this stays out of the active allowlist until package ownership/profile status is verified |
+| `Microsoft.Agents.AI.Workflows.Declarative.Mcp` | Source/GitHub-Packages observed; NuGet.org flat-container lookup returned 404. Do not treat it as a NuGet.org allowlist package unless publication is verified |
+| `Microsoft.Agents.AI.Hosting.AzureAIResponses` | GitHub-Packages observed alpha; not in the MicrosoftAgentFramework NuGet.org profile |
 
 **`replacementName` does not apply to `customManagers` (`customType: "regex"`)** — for `Version.props` indirection, the replacement PR opens but the property rename is manual. Each replacement-rule's `prBodyNotes` says so.
 
@@ -94,7 +123,7 @@ Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/micros
 | Lockfile maintenance + digest pins | Automerge always |
 | Major bumps (default) | Manual review |
 | `.NET SDK` (`global.json`) | Stable channel only (`x.y.z`) |
-| `platformAutomerge: true` | Uses GitHub's native auto-merge (waits for required branch-protection checks) |
+| `platformAutomerge: true` | Requires GitHub branch protection with required status checks before merging |
 | `prHourlyLimit: 2` / `prConcurrentLimit: 5` | Caps Renovate PR rate per repo |
 
 Rule order matters: the global "majors → manual review" rule sits **before**

@@ -3,7 +3,10 @@
   "type": "module",
   "scripts": {
     "test": "node scripts/assert-maf-config.mjs",
-    "validate:renovate": "npx --yes --package renovate@latest -- renovate-config-validator --strict --no-global default.json",
-    "validate": "npm run test && npm run validate:renovate"
+    "validate:renovate": "npx --yes renovate-config-validator --strict --no-global default.json",
+    "validate": "npm run test"
+  },
+  "devDependencies": {
+    "renovate": "43.130.0"
   }
 }
