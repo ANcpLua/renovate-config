@@ -8,8 +8,8 @@
 # See: https://docs.github.com/en/actions/security-guides/automatic-token-authentication
 #
 # Tiers:
-# 1a. Dependabot PRs: Auto-approve + auto-merge for patch/minor
-# 1b. Renovate PRs: Auto-approve + auto-merge
+# 1a. Dependabot PRs: Auto-approve + immediate merge for stable patch/minor
+# 1b. Renovate PRs: Auto-approve + immediate merge for stable non-major updates
 # 2.  Trusted-bot fix PRs (copilot[bot]/jules[bot]/claude-code[bot] +
 #     matching branch + not draft): Auto-approve + auto-merge
 # 3.  CodeRabbit approved PRs: Auto-merge when CI passes
@@ -23,12 +23,9 @@
 # to not be in draft. That's a "trusted-bot" pattern, not a rubber-stamp:
 # the App, branch, and not-draft together establish intent.
 #
-# Auto-merge fallback pattern: every tier's merge step uses
-# `gh pr merge --auto --squash || gh pr merge --squash`. Plain `--auto`
-# refuses with "Pull request is in clean status" when the PR is already
-# mergeable at the moment the workflow fires (all required checks already
-# passed before the auto-merge job got a chance to queue) — the fallback
-# direct-squash makes those PRs land immediately instead of sitting open.
+# Bot dependency updates use direct admin squash merge after the stable-update
+# gate passes, so they do not wait on normal required-check auto-merge behavior.
+# The remaining tiers still use the `--auto || direct-squash` fallback pattern.
 
 name: Auto-merge (reusable)
 
@@ -48,7 +45,7 @@ permissions:
 
 jobs:
   dependabot-auto-merge:
-    name: Dependabot auto-merge
+    name: Dependabot stable update auto-merge
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
@@ -64,41 +61,43 @@ jobs:
         with:
           github-token: ${{ steps.app-token.outputs.token }}
 
-      - name: Auto-approve patch and minor updates
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+      - name: Gate stable patch and minor updates
+        id: gate
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          NEW_VERSION: ${{ steps.metadata.outputs.new-version }}
+        run: |
+          set -euo pipefail
+          if [ "$UPDATE_TYPE" = "version-update:semver-major" ]; then
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping major dependency update"
+            exit 0
+          fi
+
+          if printf '%s\n' "$NEW_VERSION" | grep -Eiq '(^|[.-])(alpha|beta|preview|rc)([.-]|$)'; then
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping prerelease dependency update"
+            exit 0
+          fi
+
+          echo "merge=true" >> "$GITHUB_OUTPUT"
+
+      - name: Auto-approve stable patch and minor updates
+        if: steps.gate.outputs.merge == 'true'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: gh pr review --approve "$PR_URL"
 
-      - name: Enable auto-merge for patch and minor
-        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+      - name: Immediately merge stable patch and minor updates
+        if: steps.gate.outputs.merge == 'true'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
-
-      - name: Request Claude review for major updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          DEP_NAMES: ${{ steps.metadata.outputs.dependency-names }}
-          PREV_VERSION: ${{ steps.metadata.outputs.previous-version }}
-          NEW_VERSION: ${{ steps.metadata.outputs.new-version }}
-        run: |
-          gh pr comment "$PR_URL" --body "## ⚠️ Major Version Update
-
-          @claude Please review this major version update for breaking changes and merge if safe.
-
-          | Dependency | Update |
-          |------------|--------|
-          | \`$DEP_NAMES\` | \`$PREV_VERSION\` → \`$NEW_VERSION\` |
-
-          Check the changelog and verify compatibility."
+        run: gh pr merge --admin --squash --delete-branch "$PR_URL"
 
   renovate-auto-merge:
-    name: Renovate auto-merge
+    name: Renovate stable update auto-merge
     runs-on: ubuntu-latest
     if: github.actor == 'renovate[bot]'
     steps:
@@ -108,17 +107,47 @@ jobs:
           app-id: ${{ secrets.AUTOMERGE_APP_ID }}
           private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
 
-      - name: Auto-approve Renovate PRs
+      - name: Gate stable non-major updates
+        id: gate
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          labels="$(gh pr view "$PR_URL" --json labels --jq '.labels[].name' | tr '\n' ' ')"
+          title="$(gh pr view "$PR_URL" --json title --jq '.title')"
+          body="$(gh pr view "$PR_URL" --json body --jq '.body')"
+          gate_text="$labels
+          $title
+          $body"
+
+          if printf '%s\n' "$gate_text" | grep -Eiq '(^|[^[:alnum:]])major([^[:alnum:]]|$)'; then
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping major dependency update"
+            exit 0
+          fi
+
+          if printf '%s\n' "$gate_text" | grep -Eiq '(^|[.-])(alpha|beta|preview|rc)([.-]|$)'; then
+            echo "merge=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping prerelease dependency update"
+            exit 0
+          fi
+
+          echo "merge=true" >> "$GITHUB_OUTPUT"
+
+      - name: Auto-approve stable Renovate PRs
+        if: steps.gate.outputs.merge == 'true'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: gh pr review --approve "$PR_URL"
 
-      - name: Enable auto-merge for Renovate
+      - name: Immediately merge stable Renovate PRs
+        if: steps.gate.outputs.merge == 'true'
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+        run: gh pr merge --admin --squash --delete-branch "$PR_URL"
 
   ai-agent-auto-merge:
     name: AI Agent auto-merge (trusted bot identities)
