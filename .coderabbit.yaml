@@ -1,0 +1,292 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# renovate-config — single source of truth for the framework's auto-merge
+# reusable workflow + Renovate policy config used across:
+#   ANcpLua/ANcpLua.NET.Sdk, ANcpLua.Roslyn.Utilities, ANcpLua.Analyzers,
+#   ANcpLua.Agents, ANcpLua/ancplua-claude-plugins, Alexander-Nachtmann/qyl
+#
+# Schema-validated against: https://coderabbit.ai/integrations/schema.v2.json
+# Lineage: derived from qyl/.coderabbit.yaml; trimmed to renovate-config's
+# actual content (CI workflow YAML + a tiny renovate.json + README).
+# Last audited: 2026-05-06
+#
+
+language: en-US
+tone_instructions: >-
+  Principal-level stewardship. Architecture, maintainability, correctness only.
+  Flag duplication, spec drift, silent behavior changes. No praise. No nits.
+early_access: true
+enable_free_tier: false
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  high_level_summary: false
+  high_level_summary_in_walkthrough: false
+  auto_title_instructions: >-
+    Use conventional commits format. Prefix with type/scope (e.g. chore(ci), fix(workflow),
+    docs(readme)). Keep under 72 characters. No periods.
+  review_status: true
+  review_details: true
+  commit_status: true
+  fail_commit_status: true
+  collapse_walkthrough: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  assess_linked_issues: true
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+
+  # ─── Labeling ────────────────────────────────────────────────────────
+  # This repo is config-only; only universal labels apply.
+  labeling_instructions:
+    - label: 'area:infra'
+      instructions: 'Apply when the PR modifies anything under .github/ or the auto-merge reusable workflow.'
+    - label: 'area:renovate'
+      instructions: 'Apply when the PR modifies renovate.json or a renovate preset.'
+    - label: 'breaking'
+      instructions: >-
+        Apply when the PR introduces breaking changes to the reusable workflow's public surface
+        (job names, secret names, supported event triggers) — every consumer would have to update.
+  auto_apply_labels: true
+
+  # ─── File scope ──────────────────────────────────────────────────────
+  path_filters:
+    - '.github/**'
+    - 'renovate.json'
+    - '**/*.md'
+    - '!**/node_modules/**'
+    - '!**/package-lock.json'
+    - '!**/pnpm-lock.yaml'
+    - '!**/yarn.lock'
+
+  # ─── Path instructions ──────────────────────────────────────────────
+  path_instructions:
+    - path: '.github/workflows/**'
+      instructions: >-
+        GitHub Actions workflows. Pin third-party actions to a full commit SHA;
+        first-party (actions/*) tag-pin OK. Concurrency groups required on push-triggered
+        workflows. Secrets via env: not inline. No secrets in logs. Action versions
+        documented with a trailing comment (# vX.Y.Z) when SHA-pinned. The auto-merge
+        reusable workflow is THE source of truth — breaking changes to its public surface
+        (job names, secrets contract) cascade to every consumer via SHA bump or @main pull.
+
+    - path: '.github/workflows/auto-merge-reusable.yml'
+      instructions: >-
+        This is the reusable workflow consumed by all framework repos. Treat any change as
+        cross-cutting. Tier numbering, secret names, and the `on.workflow_call.secrets` block
+        are public API — verify no breaking renames. The Tier 2 trusted-bot lane keys off
+        `pull_request.user.login` (immutable bot identity) + branch prefix + `draft == false`;
+        do not regress that to `github.actor` (spoofable on re-runs). All approval/merge calls
+        must use the App-installation token from `actions/create-github-app-token`, not
+        `secrets.GITHUB_TOKEN` (the latter triggers GitHub's anti-loop filter on push).
+
+    - path: 'renovate.json'
+      instructions: >-
+        Renovate config. Verify schema compliance, that `extends` references real presets,
+        and that any custom managers have a clear `description`. Flag silent removal of
+        `automerge` rules — those affect framework-wide dependency hygiene.
+
+  # ─── Auto review ────────────────────────────────────────────────────
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 0
+    drafts: false
+    ignore_title_keywords:
+      - 'deps('
+      - 'deps-dev'
+      - '[skip ci]'
+      - '[skip review]'
+      - 'wip'
+    labels: []
+    base_branches: []
+    ignore_usernames:
+      - 'dependabot[bot]'
+      - 'renovate[bot]'
+
+  # ─── Finishing touches ──────────────────────────────────────────────
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+
+  # ─── Pre-merge checks ──────────────────────────────────────────────
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
+    title:
+      mode: error
+      requirements: >-
+        Use conventional commits format with type/scope prefix (chore, fix, feat, refactor, ci, docs).
+        Include scope in parentheses where applicable. Keep under 72 characters. No trailing period.
+        Examples: chore(ci): drop self-approval tier from auto-merge-reusable, docs: trim README
+    description:
+      mode: warning
+    issue_assessment:
+      mode: warning
+    custom_checks:
+      - name: 'Reusable workflow contract'
+        mode: error
+        instructions: >-
+          If this PR modifies .github/workflows/auto-merge-reusable.yml, verify three
+          contract invariants. (1) Required secrets in `on.workflow_call.secrets` remain
+          AUTOMERGE_APP_ID and AUTOMERGE_APP_PRIVATE_KEY (or document the rename in the
+          PR description). (2) The Tier 2 ai-agent-auto-merge `if` condition keys off
+          `github.event.pull_request.user.login` AND a branch prefix AND `draft == false`
+          — do NOT regress to spoofable `github.actor`. (3) All gh pr review/merge calls
+          use `${{ steps.app-token.outputs.token }}`, not `secrets.GITHUB_TOKEN`. Pass
+          if no changes to the reusable, or all three invariants hold. Fail otherwise.
+
+  # ─── Tools ──────────────────────────────────────────────────────────
+  # Schema default for ALL tools is enabled:true. Explicitly keep the few
+  # relevant to a CI-config-only repo, disable everything else.
+  tools:
+    # KEEP — relevant to a workflow-only repo
+    actionlint:
+      enabled: true          # GitHub Actions workflow validation — the main thing here
+    markdownlint:
+      enabled: true          # README, docs
+    gitleaks:
+      enabled: true          # secret scanning — always on
+    github-checks:
+      enabled: true
+      timeout_ms: 120000
+
+    # DISABLE — no source code in this repo
+    ast-grep:
+      essential_rules: false
+    biome:
+      enabled: false         # no TS/JS code
+    eslint:
+      enabled: false
+    oxc:
+      enabled: false
+    hadolint:
+      enabled: false         # no Dockerfiles
+    shellcheck:
+      enabled: false         # no shell scripts
+    languagetool:
+      enabled: false         # grammar checker — noise
+    yamllint:
+      enabled: false         # too noisy on config; actionlint covers workflow YAML
+    ruff:
+      enabled: false         # Python
+    flake8:
+      enabled: false
+    pylint:
+      enabled: false
+    golangci-lint:
+      enabled: false         # Go
+    phpstan:
+      enabled: false
+    phpmd:
+      enabled: false
+    phpcs:
+      enabled: false
+    swiftlint:
+      enabled: false
+    detekt:
+      enabled: false         # Kotlin
+    pmd:
+      enabled: false         # Java
+    semgrep:
+      enabled: false
+    opengrep:
+      enabled: false
+    trufflehog:
+      enabled: false         # redundant with gitleaks
+    checkov:
+      enabled: false
+    tflint:
+      enabled: false
+    fortitudeLint:
+      enabled: false
+    rubocop:
+      enabled: false
+    buf:
+      enabled: false
+    regal:
+      enabled: false
+    clang:
+      enabled: false
+    cppcheck:
+      enabled: false
+    circleci:
+      enabled: false
+    clippy:
+      enabled: false
+    sqlfluff:
+      enabled: false
+    trivy:
+      enabled: false
+    prismaLint:
+      enabled: false
+    shopifyThemeCheck:
+      enabled: false
+    luacheck:
+      enabled: false
+    brakeman:
+      enabled: false
+    dotenvLint:
+      enabled: false
+    htmlhint:
+      enabled: false
+    stylelint:
+      enabled: false
+    checkmake:
+      enabled: false
+    osvScanner:
+      enabled: false
+    blinter:
+      enabled: false
+    psscriptanalyzer:
+      enabled: false
+
+# ─── Chat ─────────────────────────────────────────────────────────────
+chat:
+  auto_reply: true
+  art: false
+  integrations:
+    jira:
+      usage: disabled
+    linear:
+      usage: disabled
+
+# ─── Knowledge Base ───────────────────────────────────────────────────
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto
+  issues:
+    scope: auto
+  pull_requests:
+    scope: auto
+  code_guidelines:
+    enabled: true
+  jira:
+    usage: disabled
+  linear:
+    usage: disabled
+  mcp:
+    usage: auto
+
+# ─── Issue Enrichment ─────────────────────────────────────────────────
+issue_enrichment:
+  auto_enrich:
+    enabled: true
+  planning:
+    auto_planning:
+      enabled: false
+  labeling:
+    auto_apply_labels: true
