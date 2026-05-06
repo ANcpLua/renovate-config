@@ -22,6 +22,13 @@
 # match a known bot identity AND the branch prefix to match AND the PR
 # to not be in draft. That's a "trusted-bot" pattern, not a rubber-stamp:
 # the App, branch, and not-draft together establish intent.
+#
+# Auto-merge fallback pattern: every tier's merge step uses
+# `gh pr merge --auto --squash || gh pr merge --squash`. Plain `--auto`
+# refuses with "Pull request is in clean status" when the PR is already
+# mergeable at the moment the workflow fires (all required checks already
+# passed before the auto-merge job got a chance to queue) — the fallback
+# direct-squash makes those PRs land immediately instead of sitting open.
 
 name: Auto-merge (reusable)
 
@@ -69,7 +76,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
 
       - name: Request Claude review for major updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-major'
@@ -111,7 +118,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
 
   ai-agent-auto-merge:
     name: AI Agent auto-merge (trusted bot identities)
@@ -159,7 +166,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
 
   coderabbit-auto-merge:
     name: CodeRabbit auto-merge
@@ -179,7 +186,7 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
 
   owner-auto-merge:
     name: Owner auto-merge
@@ -198,4 +205,4 @@ jobs:
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
