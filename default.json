@@ -179,7 +179,7 @@
       "groupName": "microsoft-agent-framework-rc",
       "ignoreUnstable": false,
       "respectLatest": false,
-      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-rc(?:\\.?\\d+(?:\\.\\d+)*)?)?$/i",
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-[Rr][Cc]\\d+)?$/",
       "automerge": true,
       "automergeType": "pr",
       "dependencyDashboardApproval": false,
@@ -215,7 +215,7 @@
       "groupName": "microsoft-agent-framework-preview-alpha-quarantine",
       "ignoreUnstable": false,
       "respectLatest": false,
-      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-rc(?:\\.?\\d+(?:\\.\\d+)*)?)?$/i",
+      "allowedVersions": "/^\\d+\\.\\d+\\.\\d+(?:-[Rr][Cc]\\d+)?$/",
       "automerge": false,
       "dependencyDashboardApproval": true,
       "labels": ["dependencies", "microsoft-agent-framework", "preview-or-alpha", "manual-review"],
@@ -229,7 +229,7 @@
       "matchDatasources": ["nuget"],
       "matchPackageNames": ["Microsoft.Agents.AI.AzureAI"],
       "replacementName": "Microsoft.Agents.AI.Foundry",
-      "replacementVersion": "1.3.0",
+      "replacementVersion": "1.4.0",
       "automerge": false,
       "dependencyDashboardApproval": true,
       "labels": ["dependencies", "microsoft-agent-framework", "legacy", "migration"],
@@ -242,7 +242,7 @@
       "matchDatasources": ["nuget"],
       "matchPackageNames": ["Microsoft.Agents.AI.Workflows.Declarative.AzureAI"],
       "replacementName": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
-      "replacementVersion": "1.3.0-rc1",
+      "replacementVersion": "1.4.0-rc1",
       "automerge": false,
       "dependencyDashboardApproval": true,
       "labels": ["dependencies", "microsoft-agent-framework", "legacy", "migration"],
@@ -251,17 +251,10 @@
       ]
     },
     {
-      "description": "MAF legacy preview package — migrate FoundryMemory to Foundry",
+      "description": "MAF FoundryMemory — legacyObserved old preview, intentionally disabled. Excluded from active 1.4 policy. No replacementName asserted because upstream documentation does not explicitly confirm a replacement path; consumers should migrate manually if needed.",
       "matchDatasources": ["nuget"],
       "matchPackageNames": ["Microsoft.Agents.AI.FoundryMemory"],
-      "replacementName": "Microsoft.Agents.AI.Foundry",
-      "replacementVersion": "1.3.0",
-      "automerge": false,
-      "dependencyDashboardApproval": true,
-      "labels": ["dependencies", "microsoft-agent-framework", "legacy", "preview", "migration"],
-      "prBodyNotes": [
-        "Microsoft.Agents.AI.FoundryMemory is marked superseded in the ANcpLua Microsoft Agent Framework matrix 2026-05-05. Prefer Microsoft.Agents.AI.Foundry. Replacement rules do not apply to custom.regex-managed Version.props entries, so Version.props migrations may require manual edits."
-      ]
+      "enabled": false
     },
     {
       "description": ".NET SDK — stable channel only, block previews",

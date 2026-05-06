@@ -72,18 +72,59 @@ takes over.
 [rel]: https://github.com/renovatebot/renovate/releases/tag/23.67.0
 [r2266]: https://github.com/renovatebot/renovate/issues/2266
 
-## Microsoft Agent Framework matrix (2026-05-05)
+## Microsoft Agent Framework matrix (2026-05-05, dotnet-1.4.0)
 
-Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/microsoft-agent-framework-packages.json) — 31 packages: 6 stable, 6 rc (4 active, 2 superseded), 18 preview (17 active, 1 superseded), 1 alpha.
+Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/microsoft-agent-framework-packages.json).
 
-| Track | Behavior |
-|---|---|
-| Stable (6) | `allowedVersions: /^\d+\.\d+\.\d+$/` — automerge incl. majors, stable only |
-| RC (4 active) | `allowedVersions: /^\d+\.\d+\.\d+(?:-rc...)?$/i` + `ignoreUnstable:false` — automerge incl. majors, stable + `-rc` only |
-| Preview/alpha quarantine (18) | Same allowed-versions regex as RC; `automerge:false` + `dependencyDashboardApproval:true`. Renovate cannot propose new preview/alpha bumps; only graduation PRs to stable/RC open |
-| Superseded (3) | `replacementName` rules → `Foundry` family, manual approval |
+The matrix tracks the upstream `microsoft/agent-framework` **dotnet-1.4.0** release line as observed on NuGet.org on 2026-05-05.
 
-**`replacementName` does not apply to `customManagers` (`customType: "regex"`)** — for `Version.props` indirection, the replacement PR opens but the property rename is manual. Each replacement-rule's `prBodyNotes` says so.
+**Active policy: 30 packages** (unless live NuGet.org verification adds a newly published source-observed package — see below):
+
+| Track | Count | Behavior |
+|---|---|---|
+| Stable | 6 | `allowedVersions: /^\d+\.\d+\.\d+$/` — automerge incl. majors, stable only |
+| RC active | 4 | `allowedVersions: /^\d+\.\d+\.\d+(?:-[Rr][Cc]\d+)?$/` + `ignoreUnstable:false` + `respectLatest:false` — automerge incl. majors, stable + `-rcN` only |
+| RC legacy | 2 | `Microsoft.Agents.AI.AzureAI` (→ `Foundry`), `Microsoft.Agents.AI.Workflows.Declarative.AzureAI` (→ `Workflows.Declarative.Foundry`) — `automerge:false`, `dependencyDashboardApproval:true`, manual approval |
+| Preview quarantine | 17 | Same allowed-versions regex as active RC; `automerge:false` + `dependencyDashboardApproval:true`. Renovate cannot propose new preview bumps; only graduation PRs to stable/RC open |
+| Alpha quarantine | 1 | `Microsoft.Agents.AI.Hosting.OpenAI`. Same quarantine behavior; can only graduate to RC/stable with manual approval |
+
+### NuGet.org profile vs active policy — why the count differs
+
+The MicrosoftAgentFramework NuGet.org profile shows **31 packages**. The active policy matrix is **30**. The difference is `Microsoft.Agents.AI.FoundryMemory`:
+
+- It is an **old preview package** (`1.0.0-preview.260330.1`) on the profile.
+- It is **intentionally excluded from active 1.4 policy** as `legacyObserved` / old preview.
+- Renovate is disabled for it (`enabled: false` packageRule). The customManager keeps the `Version.props` symbol parsable in consumer repositories without proposing updates.
+- **No `replacementName` is asserted**, because upstream documentation does not explicitly confirm a replacement path. Consumers must migrate manually if needed.
+
+### Source-observed packages (excluded from active policy)
+
+These exist as `.csproj` projects in `microsoft/agent-framework dotnet/src` but are **not treated as NuGet.org dependencies** until live NuGet.org publication is verified. Promotion to active policy requires re-running the live verification:
+
+- **`Microsoft.Agents.AI.Mem0`** — source-observed unless NuGet.org publication is verified. A single preview was published but is currently **unlisted** by Microsoft and is not on the MicrosoftAgentFramework profile (the 31 count). Re-list or republish would qualify it for activePolicy promotion.
+- **`Microsoft.Agents.AI.Workflows.Declarative.Mcp`** — source-or-GitHub-Packages observed unless NuGet.org publication is verified. GitHub Packages publication is **not** the same as NuGet.org publication.
+- **`Microsoft.Agents.AI.Hyperlight`** — must be verified live because the `dotnet-1.4.0` release notes mention it but the NuGet.org profile snapshot does not include it. If live NuGet.org lookup confirms publication, classify by detected version (stable/rc/preview/alpha) and promote into activePolicy with updated counts.
+
+Live verification command per package:
+
+```bash
+curl -fsSL "https://api.nuget.org/v3-flatcontainer/<lowercase-package-id>/index.json"
+```
+
+Profile-level package list:
+
+<https://www.nuget.org/profiles/MicrosoftAgentFramework>
+
+### Replacement rules
+
+Only **two** replacement rules are configured, and only for verified replacement paths:
+
+| From | To | replacementVersion |
+|---|---|---|
+| `Microsoft.Agents.AI.AzureAI` | `Microsoft.Agents.AI.Foundry` | `1.4.0` |
+| `Microsoft.Agents.AI.Workflows.Declarative.AzureAI` | `Microsoft.Agents.AI.Workflows.Declarative.Foundry` | `1.4.0-rc1` |
+
+`replacementName` does **not** apply to `customManagers` (`customType: "regex"`) — for `Version.props` indirection, the replacement PR opens but the symbolic-property rename is manual. Each replacement rule's `prBodyNotes` flags this limitation.
 
 ## Other automerge rules
 
@@ -94,7 +135,7 @@ Authoritative data: [`data/microsoft-agent-framework-packages.json`](data/micros
 | Lockfile maintenance + digest pins | Automerge always |
 | Major bumps (default) | Manual review |
 | `.NET SDK` (`global.json`) | Stable channel only (`x.y.z`) |
-| `platformAutomerge: true` | Uses GitHub's native auto-merge (waits for required branch-protection checks) |
+| `platformAutomerge: true` | Uses GitHub's native auto-merge. **Requires GitHub branch protection** with **required status checks** enabled for the target branch — without that, automerge is unsafe because PRs can merge without CI gating |
 | `prHourlyLimit: 2` / `prConcurrentLimit: 5` | Caps Renovate PR rate per repo |
 
 Rule order matters: the global "majors → manual review" rule sits **before**
@@ -127,6 +168,6 @@ same on every push and PR. See the script for the exact assertion list.
 
 ## Rollback
 
-- **Disable MAF major automerge only** — drop the stable + RC allowlist rules; the global "majors → manual review" rule handles MAF again.
-- **Quarantine all MAF** — delete the stable + RC rules; everything in the matrix becomes manual review.
-- **Drop the indirection** — remove `customManagers`; CPM literals fall back to Renovate's native NuGet manager.
+- **Return MAF majors to manual review** — remove the stable + active-RC allowlist `automerge` rules; the global "majors → manual review" rule then handles MAF again.
+- **Drop `Version.props` indirection** — remove the MAF `customManagers` once consumer repos stop using `Version.props` symbolic-property indirection; CPM literals then fall back to Renovate's native NuGet manager.
+- **Remove legacy observed blocks** — only after every consumer repository has been verified to no longer reference the affected legacy/observed package ids (e.g., `Microsoft.Agents.AI.FoundryMemory`); otherwise Renovate stops parsing the symbol entirely and consumer pins go silent.

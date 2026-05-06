@@ -1,184 +1,258 @@
 {
   "asOf": "2026-05-05",
   "family": "Microsoft Agent Framework",
+  "releaseLine": "dotnet-1.4.0",
   "summary": {
     "stable": 6,
     "rc": 6,
-    "preview": 18,
+    "activeRc": 4,
+    "legacyRc": 2,
+    "preview": 17,
     "alpha": 1,
-    "total": 31
+    "activePolicyTotal": 30,
+    "nugetProfileTotalObserved": 31,
+    "legacyObserved": 1,
+    "sourceObserved": 3
   },
-  "packages": [
-    {
-      "name": "Microsoft.Agents.AI",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "Core functionality"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Abstractions",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "Interfaces and abstractions"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Foundry",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "Foundry Agents support"
-    },
-    {
-      "name": "Microsoft.Agents.AI.OpenAI",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "OpenAI support"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Workflows",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "Workflows support"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Workflows.Generators",
-      "version": "1.3.0",
-      "status": "stable",
-      "description": "Roslyn source generators"
-    },
-    {
-      "name": "Microsoft.Agents.AI.AzureAI",
-      "version": "1.0.0-rc5",
-      "status": "rc",
-      "description": "Legacy Foundry Agents support, AzureAI naming",
-      "supersededBy": "Microsoft.Agents.AI.Foundry"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Declarative",
-      "version": "1.3.0-rc1",
-      "status": "rc",
-      "description": "Declarative agents support"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Purview",
-      "version": "1.3.0-rc1",
-      "status": "rc",
-      "description": "Purview integration"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Workflows.Declarative",
-      "version": "1.3.0-rc1",
-      "status": "rc",
-      "description": "Declarative workflows support"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Workflows.Declarative.AzureAI",
-      "version": "1.0.0-rc5",
-      "status": "rc",
-      "description": "Legacy declarative workflows for Azure AI Agents",
-      "supersededBy": "Microsoft.Agents.AI.Workflows.Declarative.Foundry"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
-      "version": "1.3.0-rc1",
-      "status": "rc",
-      "description": "Declarative workflows for Foundry"
-    },
-    {
-      "name": "Aspire.Hosting.AgentFramework.DevUI",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.A2A",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.AGUI",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Anthropic",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.AzureAI.Persistent",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.CopilotStudio",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.CosmosNoSql",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.DevUI",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.DurableTask",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Foundry.Hosting",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.FoundryMemory",
-      "version": "1.0.0-preview.260330.1",
-      "status": "preview",
-      "description": "Legacy memory integration, consolidated into Foundry",
-      "supersededBy": "Microsoft.Agents.AI.Foundry"
-    },
-    {
-      "name": "Microsoft.Agents.AI.GitHub.Copilot",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting.A2A",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting.A2A.AspNetCore",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting.AzureFunctions",
-      "version": "1.3.0-preview.260423.1",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.ProjectTemplates",
-      "version": "1.3.0-preview.1.26251.3",
-      "status": "preview"
-    },
-    {
-      "name": "Microsoft.Agents.AI.Hosting.OpenAI",
-      "version": "1.3.0-alpha.260423.1",
-      "status": "alpha"
-    }
-  ]
+  "activePolicy": {
+    "packages": [
+      {
+        "name": "Microsoft.Agents.AI",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "Core functionality"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Abstractions",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "Interfaces and abstractions"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Foundry",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "Foundry Agents support"
+      },
+      {
+        "name": "Microsoft.Agents.AI.OpenAI",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "OpenAI support"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "Workflows support"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows.Generators",
+        "version": "1.4.0",
+        "status": "stable",
+        "lifecycle": "active",
+        "description": "Roslyn source generators"
+      },
+      {
+        "name": "Microsoft.Agents.AI.AzureAI",
+        "version": "1.0.0-rc5",
+        "status": "rc",
+        "lifecycle": "legacy",
+        "supersededBy": "Microsoft.Agents.AI.Foundry",
+        "automerge": false,
+        "dependencyDashboardApproval": true,
+        "description": "Legacy AzureAI naming, superseded by Foundry"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Declarative",
+        "version": "1.4.0-rc1",
+        "status": "rc",
+        "lifecycle": "active",
+        "description": "Declarative agents support"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Purview",
+        "version": "1.4.0-rc1",
+        "status": "rc",
+        "lifecycle": "active",
+        "description": "Purview integration"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows.Declarative",
+        "version": "1.4.0-rc1",
+        "status": "rc",
+        "lifecycle": "active",
+        "description": "Declarative workflows support"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows.Declarative.AzureAI",
+        "version": "1.0.0-rc5",
+        "status": "rc",
+        "lifecycle": "legacy",
+        "supersededBy": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
+        "automerge": false,
+        "dependencyDashboardApproval": true,
+        "description": "Legacy declarative AzureAI workflows, superseded by Workflows.Declarative.Foundry"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows.Declarative.Foundry",
+        "version": "1.4.0-rc1",
+        "status": "rc",
+        "lifecycle": "active",
+        "description": "Declarative workflows for Foundry"
+      },
+      {
+        "name": "Aspire.Hosting.AgentFramework.DevUI",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.A2A",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.AGUI",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Anthropic",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.AzureAI.Persistent",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.CopilotStudio",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.CosmosNoSql",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.DevUI",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.DurableTask",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Foundry.Hosting",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.GitHub.Copilot",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting.A2A",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting.A2A.AspNetCore",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting.AGUI.AspNetCore",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting.AzureFunctions",
+        "version": "1.4.0-preview.260505.1",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.ProjectTemplates",
+        "version": "1.3.0-preview.1.26251.3",
+        "status": "preview",
+        "lifecycle": "active"
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hosting.OpenAI",
+        "version": "1.4.0-alpha.260505.1",
+        "status": "alpha",
+        "lifecycle": "active"
+      }
+    ]
+  },
+  "legacyObserved": {
+    "packages": [
+      {
+        "name": "Microsoft.Agents.AI.FoundryMemory",
+        "version": "1.0.0-preview.260330.1",
+        "status": "preview",
+        "lifecycle": "legacy-observed",
+        "policy": "disabled",
+        "automerge": false,
+        "dependencyDashboardApproval": true,
+        "activePolicy": false,
+        "replacementName": null,
+        "note": "Old preview package on the MicrosoftAgentFramework NuGet profile. Excluded from the active 1.4 policy matrix. No replacementName is asserted because upstream documentation does not explicitly confirm a replacement path. Renovate is disabled for this package id; the existing customManager keeps the Version.props symbol parsable in consumer repositories without proposing updates."
+      }
+    ]
+  },
+  "sourceObserved": {
+    "packages": [
+      {
+        "name": "Microsoft.Agents.AI.Mem0",
+        "status": "source-observed",
+        "activePolicy": false,
+        "reason": "Source project exists in microsoft/agent-framework dotnet/src. A single preview package 1.0.0-preview.251028.1 is present on NuGet.org but is currently unlisted (listed=false), is not part of the MicrosoftAgentFramework profile (31 packages), and is not part of the dotnet-1.4.0 release line. Treated as not actively published; promote to activePolicy only if upstream re-lists or republishes under the active profile. Live verified 2026-05-05 via NuGet V3 flat-container and registration5-gz-semver2."
+      },
+      {
+        "name": "Microsoft.Agents.AI.Workflows.Declarative.Mcp",
+        "status": "source-or-github-packages-observed",
+        "expectedSourceStatus": "rc",
+        "activePolicy": false,
+        "reason": "Source project / GitHub Packages observation only. NuGet.org V3 flat-container returns 404 for this package id. GitHub Packages publication is not the same as NuGet.org publication. Promote to activePolicy only after live NuGet.org lookup confirms publication. Live verified 2026-05-05."
+      },
+      {
+        "name": "Microsoft.Agents.AI.Hyperlight",
+        "status": "source-observed-or-new-package-candidate",
+        "activePolicy": false,
+        "reason": "dotnet-1.4.0 release notes mention this package and the source project exists, but it is not part of the MicrosoftAgentFramework profile snapshot (31 packages) and NuGet.org V3 flat-container returns 404. Promote to activePolicy when live NuGet.org lookup confirms publication; classify by detected version (stable/rc/preview/alpha). Live verified 2026-05-05."
+      }
+    ]
+  }
 }
