@@ -7,6 +7,23 @@ use the schema below so automated runners can parse, sort, validate, and trim
 the log deterministically.
 
 ```yaml
+- timestamp: "2026-05-10T20:35:17Z"
+  title: "branch-hygiene-sweep"
+  summary: "Merged renovate-config changelog PR, confirmed SDK cleanup, and stopped on live pending qyl checks."
+  evidence:
+    - "quick gate returned NO_WORK=0 and classifier flagged ancplua-claude-plugins #241, qyl #307/#313, SDK local refs, and renovate-config #22"
+    - "renovate-config PR #22 head 813d36f7075e868180198e1f5da90011dec9fa60 had CodeRabbit and GitGuardian passing, mergeStateStatus CLEAN, and resolved/outdated review threads"
+    - "ANcpLua.NET.Sdk main is f35ca55f1306b02f94811d175f2f67e699d0a569 and local branch list contains only main after fetch/prune"
+    - "qyl PR #313 one checks snapshot showed CodeQL csharp/javascript/python, Backend (.NET), CodeRabbit, and claude-review pending"
+    - "ancplua-claude-plugins PR #241 head c43831d0c90e7c6e7ef43195327f3b6d4ee3299c remains DIRTY and CHANGES_REQUESTED with CodeRabbit pending"
+  actions:
+    - "fixed renovate-config PR #22 CodeRabbit changelog comments and verified with npm test"
+    - "merged renovate-config PR #22 at 2026-05-10T20:34:20Z and pruned origin/automation/branch-hygiene-changelog-20260510-1734"
+    - "fast-forward checked ANcpLua.NET.Sdk main after PR #138 merged"
+  blocked:
+    - "qyl PR #313 is pushed-checks-running per no-watch policy"
+    - "qyl remains dirty on dev/forgejo-summary-research with SummaryFacade changes and an untracked SummaryFacadeTests file"
+    - "ancplua-claude-plugins PR #241 remains CHANGES_REQUESTED and DIRTY"
 - timestamp: "2026-05-10T17:34:14Z"
   title: "branch-hygiene-sweep"
   summary: "Pushed SDK PR review cleanup and stopped on the required one-snapshot check state."
