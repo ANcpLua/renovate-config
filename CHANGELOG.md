@@ -13,8 +13,9 @@ and trim the log deterministically.
   title: "branch-hygiene-sweep"
   summary: "Merged clean qyl and renovate-config PRs, then stopped on live PR blockers."
   evidence:
-    - "quick gate returned NO_WORK=0 and classifier flagged ancplua-claude-plugins #241, qyl #307/#313/#314, and renovate-config #23"
+    - "quick gate returned NO_WORK=0 and classifier flagged ancplua-claude-plugins #241, qyl #307/#313/#314/#315, and renovate-config #23"
     - "qyl PR #314 head 272cc478e2fe7f947a53622f79417b1a20c4c365 had mergeStateStatus CLEAN with Backend (.NET), CodeQL, Frontend, Schema Drift, Dependency Audit, Regen Clean, CodeRabbit, claude-review, and renovate/stability-days passing"
+    - "qyl PR #315 head 2a2632a57e35b06c6132285d9b91ad8790bcfb2b had mergeStateStatus CLEAN with Backend (.NET), CodeQL, Frontend, Schema Drift, Dependency Audit, Regen Clean, CodeRabbit, claude-review, and renovate/stability-days passing"
     - "renovate-config PR #23 head 6ba5d0c1d67fe01ca46e9e13ce4bbf1e1a8c4128 had mergeStateStatus CLEAN with CodeRabbit and GitGuardian passing"
     - "qyl PR #313 head e7f7b09771ca08887d818b1d9bd18b271715ef50 has Backend (.NET) passing and claude-review plus CodeQL csharp still in progress in the one live snapshot"
     - "qyl PR #307 head 17573ac50c252f033c69a2e73cbef418bf813352 fixed the Backend (.NET) duplicate analyzer key failure; local verifier dotnet build qyl.slnx --nologo /clp:ErrorsOnly succeeded with 0 errors"
@@ -22,6 +23,7 @@ and trim the log deterministically.
   actions:
     - "merged qyl PR #314 at 2026-05-10T23:34:02Z"
     - "pruned qyl remote branch origin/renovate/node-25.x because PR #314 was merged"
+    - "merged qyl PR #315 at 2026-05-10T23:40:03Z and pruned origin/renovate/node-24.x"
     - "merged renovate-config PR #23 at 2026-05-10T23:34:03Z and pruned origin/automation/branch-hygiene-run-20260510-2035"
     - "pushed qyl PR #313 review fixes through head e7f7b09771ca08887d818b1d9bd18b271715ef50"
     - "pushed qyl PR #307 commit 17573ac50c252f033c69a2e73cbef418bf813352 removing duplicate .globalconfig analyzer severities"
