@@ -7,6 +7,25 @@ use the schema below so automated runners can parse, sort, validate, and trim
 the log deterministically.
 
 ```yaml
+- timestamp: "2026-05-10T23:35:03Z"
+  title: "branch-hygiene-sweep"
+  summary: "Merged clean qyl and renovate-config PRs, then stopped on live PR blockers."
+  evidence:
+    - "quick gate returned NO_WORK=0 and classifier flagged ancplua-claude-plugins #241, qyl #307/#313/#314, and renovate-config #23"
+    - "qyl PR #314 head 272cc478e2fe7f947a53622f79417b1a20c4c365 had mergeStateStatus CLEAN with Backend (.NET), CodeQL, Frontend, Schema Drift, Dependency Audit, Regen Clean, CodeRabbit, claude-review, and renovate/stability-days passing"
+    - "renovate-config PR #23 head 6ba5d0c1d67fe01ca46e9e13ce4bbf1e1a8c4128 had mergeStateStatus CLEAN with CodeRabbit and GitGuardian passing"
+    - "qyl PR #313 head 9b0432669680ded6cb707a15b19f00508b56ae18 restored the contract-complete blocker payload; one live snapshot showed CI/CodeQL/claude-review queued or in progress and CodeRabbit pending"
+    - "qyl PR #307 remains UNSTABLE with Backend (.NET) failing at run 25624586842 job 75217271104"
+    - "ancplua-claude-plugins PR #241 remains DIRTY and CHANGES_REQUESTED with six latest CodeRabbit actionable comments"
+  actions:
+    - "merged qyl PR #314 at 2026-05-10T23:34:02Z and pruned origin/renovate/node-25.x"
+    - "merged renovate-config PR #23 at 2026-05-10T23:34:03Z and pruned origin/automation/branch-hygiene-run-20260510-2035"
+    - "confirmed qyl PR #313 branch already contained pushed fix 9b0432669680ded6cb707a15b19f00508b56ae18"
+  blocked:
+    - "qyl PR #313 is pushed-checks-running per no-watch policy"
+    - "qyl remains dirty on dev/forgejo-summary-research with SummaryFacade changes and an untracked SummaryFacadeTests file"
+    - "qyl PR #307 requires Backend (.NET) failure investigation"
+    - "ancplua-claude-plugins PR #241 requires merge-conflict resolution and implementation of live review comments"
 - timestamp: "2026-05-10T20:35:17Z"
   title: "branch-hygiene-sweep"
   summary: "Merged renovate-config changelog PR, confirmed SDK cleanup, and stopped on live pending qyl checks."
