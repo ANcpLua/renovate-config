@@ -25,7 +25,10 @@
 #
 # Bot dependency updates use direct admin squash merge after the stable-update
 # gate passes, so they do not wait on normal required-check auto-merge behavior.
-# The remaining tiers still use the `--auto || direct-squash` fallback pattern.
+# The remaining tiers use peter-evans/enable-pull-request-automerge with
+# continue-on-error: true so callers whose base branch lacks branch protection
+# (e.g. sync PRs, repos without `Allow auto-merge`, conflicted PRs) don't break
+# CI when GitHub rejects the enablePullRequestAutoMerge GraphQL mutation.
 
 name: Auto-merge (reusable)
 
@@ -192,10 +195,12 @@ jobs:
           gh pr review --approve "$PR_URL" --body "✅ Auto-approved: $AGENT autonomous fix PR (trusted-bot identity verified)"
 
       - name: Enable auto-merge for AI agent PRs
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d # v3.0.0
+        continue-on-error: true
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
 
   coderabbit-auto-merge:
     name: CodeRabbit auto-merge
@@ -212,10 +217,12 @@ jobs:
           private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
 
       - name: Enable auto-merge for CodeRabbit approved PRs
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d # v3.0.0
+        continue-on-error: true
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
 
   owner-auto-merge:
     name: Owner auto-merge
@@ -231,7 +238,9 @@ jobs:
           private-key: ${{ secrets.AUTOMERGE_APP_PRIVATE_KEY }}
 
       - name: Enable auto-merge for owner PRs
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: gh pr merge --auto --squash "$PR_URL" || gh pr merge --squash "$PR_URL"
+        uses: peter-evans/enable-pull-request-automerge@a660677d5469627102a1c1e11409dd063606628d # v3.0.0
+        continue-on-error: true
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
