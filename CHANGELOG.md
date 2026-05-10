@@ -3,11 +3,11 @@
 This file is for cron automated runners. It is not developer-facing release notes.
 
 Keep only the 10 most recent automation entries, newest first. Each entry must
-use the schema below so automated runners can parse, sort, validate, and trim
-the log deterministically.
+match `CHANGELOG.schema.json` so automated runners can parse, sort, validate,
+and trim the log deterministically.
 
 ```yaml
-- timestamp: "2026-05-10T23:35:03Z"
+- timestamp: "2026-05-11T00:35:03+01:00"
   title: "branch-hygiene-sweep"
   summary: "Merged clean qyl and renovate-config PRs, then stopped on live PR blockers."
   evidence:
@@ -18,7 +18,8 @@ the log deterministically.
     - "qyl PR #307 head 17573ac50c252f033c69a2e73cbef418bf813352 fixed the Backend (.NET) duplicate analyzer key failure; local verifier dotnet build qyl.slnx --nologo /clp:ErrorsOnly succeeded with 0 errors"
     - "ancplua-claude-plugins PR #241 remains DIRTY and CHANGES_REQUESTED with six latest CodeRabbit actionable comments"
   actions:
-    - "merged qyl PR #314 at 2026-05-10T23:34:02Z and pruned origin/renovate/node-25.x"
+    - "merged qyl PR #314 at 2026-05-10T23:34:02Z"
+    - "pruned qyl remote branch origin/renovate/node-25.x because PR #314 was merged"
     - "merged renovate-config PR #23 at 2026-05-10T23:34:03Z and pruned origin/automation/branch-hygiene-run-20260510-2035"
     - "pushed qyl PR #313 review fixes through head e7f7b09771ca08887d818b1d9bd18b271715ef50"
     - "pushed qyl PR #307 commit 17573ac50c252f033c69a2e73cbef418bf813352 removing duplicate .globalconfig analyzer severities"
