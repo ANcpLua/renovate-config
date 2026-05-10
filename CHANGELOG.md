@@ -1,13 +1,15 @@
 # Automation Changelog
 
 This file is for cron automated runners. It is not developer-facing release notes.
+Long-lived blockers live in [PERSISTENT-BLOCKERS.md](PERSISTENT-BLOCKERS.md);
+this log records only sweep-specific outcomes.
 
 Keep only the 10 most recent automation entries, newest first. Each entry must
 match `CHANGELOG.schema.json` so automated runners can parse, sort, validate,
 and trim the log deterministically.
 
 ```yaml
-- timestamp: "2026-05-11T00:35:03+01:00"
+- timestamp: "2026-05-11T01:35:03+02:00"
   title: "branch-hygiene-sweep"
   summary: "Merged clean qyl and renovate-config PRs, then stopped on live PR blockers."
   evidence:
@@ -24,10 +26,8 @@ and trim the log deterministically.
     - "pushed qyl PR #313 review fixes through head e7f7b09771ca08887d818b1d9bd18b271715ef50"
     - "pushed qyl PR #307 commit 17573ac50c252f033c69a2e73cbef418bf813352 removing duplicate .globalconfig analyzer severities"
   blocked:
-    - "qyl PR #313 is pushed-checks-running per no-watch policy"
-    - "qyl remains dirty on dev/forgejo-summary-research with SummaryFacade changes and an untracked SummaryFacadeTests file"
-    - "qyl PR #307 is pushed-checks-running per no-watch policy"
-    - "ancplua-claude-plugins PR #241 requires merge-conflict resolution and implementation of live review comments"
+    - "qyl PR #313 is pushed-checks-running per no-watch policy; recurring blocker details are tracked in PERSISTENT-BLOCKERS.md"
+    - "qyl PR #307 is pushed-checks-running per no-watch policy; recurring blocker details are tracked in PERSISTENT-BLOCKERS.md"
 - timestamp: "2026-05-10T20:35:17Z"
   title: "branch-hygiene-sweep"
   summary: "Merged renovate-config changelog PR, confirmed SDK cleanup, and stopped on live pending qyl checks."
