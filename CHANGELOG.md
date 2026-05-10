@@ -11,15 +11,15 @@ the log deterministically.
   title: "branch-hygiene-sweep"
   summary: "Pushed SDK PR review cleanup and stopped on the required one-snapshot check state."
   evidence:
-    - "quick gate returned NO_WORK=0"
     - "classifier found open PR work in ancplua-claude-plugins #241, qyl #307, and ANcpLua.NET.Sdk #138"
     - "ANcpLua.NET.Sdk PR #138 head is 4c945d356f8a5de2a00ff8643b923e7cc74a3b85"
     - "ANcpLua.NET.Sdk targeted verifier exited 0: dotnet test --project tests/ANcpLua.Sdk.Tests/ANcpLua.Sdk.Tests.csproj --no-restore -- --filter-method '*EditorConfig*'"
     - "single gh pr checks 138 snapshot showed test (ubuntu-latest), test (windows-latest), and test (macos-latest) pending"
+    - "qyl PR #311 merged at 2026-05-10T14:36:34Z and qyl PR #312 merged at 2026-05-10T14:36:49Z per gh pr list --state all live metadata"
   actions:
     - "pushed ANcpLua.NET.Sdk automation/local-editorconfig-override-tests commit 4c945d356f8a5de2a00ff8643b923e7cc74a3b85"
     - "removed redundant file-level AwesomeAssertions using after the project-level Using import made it duplicate"
-    - "confirmed qyl PR #311 and #312 are merged and qyl has one open PR #307"
+    - "recorded qyl PR #311/#312 merge evidence and confirmed qyl has one open PR #307"
   blocked:
     - "ANcpLua.NET.Sdk PR #138 is pushed-checks-running per no-watch policy"
     - "qyl remains dirty on dev/forgejo-summary-research with SummaryFacade changes and an untracked SummaryFacadeTests file"
@@ -28,7 +28,6 @@ the log deterministically.
   title: "branch-hygiene-sweep"
   summary: "Merged/pruned already-ready automation PRs, pushed SDK review fix, and stopped on running checks."
   evidence:
-    - "quick gate returned NO_WORK=0"
     - "ANcpLua.NET.Sdk PR #138 head is badce520094c452da96a0adcba80a4765f385483"
     - "ANcpLua.NET.Sdk targeted verifier passed 6/6 for *LocalEditorConfig*"
     - "ANcpLua.NET.Sdk PR #138 test matrix was pending/running in the single checks snapshot"
@@ -48,7 +47,6 @@ the log deterministically.
   title: "branch-hygiene-sweep"
   summary: "Fixed ErrorOrX Renovate PR, cleaned SDK duplicate branch state, and refreshed open PR evidence."
   evidence:
-    - "quick gate returned NO_WORK=0"
     - "ErrorOrX PR #113 merged at 35e74981218e0a64831ba3e66ee844ade5819420"
     - "ErrorOrX head fix was 540cf30a90082a0aac03986035fe12cf60fe52b7"
     - "ANcpLua.NET.Sdk PR #136 closed without merge at c5a5de66d0ce38f6dec0cda2e6eddb265fb989c1"
@@ -69,7 +67,6 @@ the log deterministically.
   title: "branch-hygiene-sweep"
   summary: "Full hygiene path entered after quick gate found live work."
   evidence:
-    - "quick gate returned NO_WORK=0"
     - "ANcpLua.NET.Sdk PR #134 merged at 5159e0f29cffc78dc6f3b23bd433379518f2c481"
     - "ANcpLua.NET.Sdk main at 012f36c92ab38ec285644fb4b1d6c254324b6364"
     - "ErrorOrX PR #113 head at 888c6b34d22f7023ae8a86e8d5a648e6888c5a74"
