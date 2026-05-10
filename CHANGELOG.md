@@ -7,6 +7,26 @@ use the schema below so automated runners can parse, sort, validate, and trim
 the log deterministically.
 
 ```yaml
+- timestamp: "2026-05-10T14:33:30Z"
+  title: "branch-hygiene-sweep"
+  summary: "Merged/pruned already-ready automation PRs, pushed SDK review fix, and stopped on running checks."
+  evidence:
+    - "quick gate returned NO_WORK=0"
+    - "ANcpLua.NET.Sdk PR #138 head is badce520094c452da96a0adcba80a4765f385483"
+    - "ANcpLua.NET.Sdk targeted verifier passed 6/6 for *LocalEditorConfig*"
+    - "ANcpLua.NET.Sdk PR #138 test matrix was pending/running in the single checks snapshot"
+    - "qyl PR #310 was already merged at origin/main 91834c71"
+    - "ancplua-claude-plugins PR #242 and #243 were already merged by merge attempt and main fast-forwarded to 5648844"
+  actions:
+    - "fast-forwarded ANcpLua.Agents main to 84ce6fe"
+    - "fast-forwarded ErrorOrX main to a9c0f33"
+    - "pushed ANcpLua.NET.Sdk automation/local-editorconfig-override-tests review fix as badce520094c452da96a0adcba80a4765f385483"
+    - "fast-forwarded ancplua-claude-plugins main after PR #242/#243 merged"
+  blocked:
+    - "ANcpLua.NET.Sdk PR #138 has running publish test jobs and queued Owner auto-merge"
+    - "qyl PR #311 and #312 have CodeQL Analyze (csharp) still pending"
+    - "qyl remains dirty on dev/forgejo-summary-research with local SummaryFacade changes and tests"
+    - "ancplua-claude-plugins PR #241 still has CHANGES_REQUESTED"
 - timestamp: "2026-05-10T11:35:00Z"
   title: "branch-hygiene-sweep"
   summary: "Fixed ErrorOrX Renovate PR, cleaned SDK duplicate branch state, and refreshed open PR evidence."
