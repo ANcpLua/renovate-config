@@ -7,6 +7,23 @@ use the schema below so automated runners can parse, sort, validate, and trim
 the log deterministically.
 
 ```yaml
+- timestamp: "2026-05-10T17:34:14Z"
+  title: "branch-hygiene-sweep"
+  summary: "Pushed SDK PR review cleanup and stopped on the required one-snapshot check state."
+  evidence:
+    - "quick gate returned NO_WORK=0"
+    - "classifier found open PR work in ancplua-claude-plugins #241, qyl #307, and ANcpLua.NET.Sdk #138"
+    - "ANcpLua.NET.Sdk PR #138 head is 4c945d356f8a5de2a00ff8643b923e7cc74a3b85"
+    - "ANcpLua.NET.Sdk targeted verifier exited 0: dotnet test --project tests/ANcpLua.Sdk.Tests/ANcpLua.Sdk.Tests.csproj --no-restore -- --filter-method '*EditorConfig*'"
+    - "single gh pr checks 138 snapshot showed test (ubuntu-latest), test (windows-latest), and test (macos-latest) pending"
+  actions:
+    - "pushed ANcpLua.NET.Sdk automation/local-editorconfig-override-tests commit 4c945d356f8a5de2a00ff8643b923e7cc74a3b85"
+    - "removed redundant file-level AwesomeAssertions using after the project-level Using import made it duplicate"
+    - "confirmed qyl PR #311 and #312 are merged and qyl has one open PR #307"
+  blocked:
+    - "ANcpLua.NET.Sdk PR #138 is pushed-checks-running per no-watch policy"
+    - "qyl remains dirty on dev/forgejo-summary-research with SummaryFacade changes and an untracked SummaryFacadeTests file"
+    - "ancplua-claude-plugins PR #241 remains CHANGES_REQUESTED and DIRTY"
 - timestamp: "2026-05-10T14:33:30Z"
   title: "branch-hygiene-sweep"
   summary: "Merged/pruned already-ready automation PRs, pushed SDK review fix, and stopped on running checks."
