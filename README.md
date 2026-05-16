@@ -154,7 +154,7 @@ ANcpLua.Roslyn.Utilities, ANcpLua.Agents
 1. Copy these files from any existing framework repo:
    - `.github/workflows/auto-merge.yml` (the canonical no-App workflow)
    - `.coderabbit.yaml` (must include `request_changes_workflow: false`)
-   - `renovate.json` (extends `github>ANcpLua/renovate-config`; add a
+   - `renovate.json` (extends `github>O-ANcppLua/renovate-config`; add a
      self-bump-block rule for the repo's own packages)
 2. Enable the repo setting: `gh api -X PATCH repos/ANcpLua/<repo> -F allow_auto_merge=true`
 3. Configure branch protection on `main` matching the table above.
@@ -168,7 +168,7 @@ ANcpLua.Roslyn.Utilities, ANcpLua.Agents
 ```jsonc
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>ANcpLua/renovate-config"]
+  "extends": ["github>O-ANcppLua/renovate-config"]
 }
 ```
 

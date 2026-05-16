@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/ANcpLua/renovate-config/blob/main/CHANGELOG.schema.json",
+  "$id": "https://github.com/O-ANcppLua/renovate-config/blob/main/CHANGELOG.schema.json",
   "title": "Automation changelog entry",
   "type": "array",
   "maxItems": 10,
