@@ -49,6 +49,7 @@
       "matchDatasources": ["nuget"],
       "matchPackageNames": [
         "/^ANcpLua\\./",
+        "/^Qyl\\./",
         "Microsoft.OpenApi.Readers",
         "JonSkeet.RoslynAnalyzers"
       ],
